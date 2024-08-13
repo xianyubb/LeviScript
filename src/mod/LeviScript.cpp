@@ -66,7 +66,7 @@ static std::unique_ptr<LeviScript> instance;
 LeviScript& LeviScript::getInstance() { return *instance; }
 
 bool LeviScript::load() {
-    getSelf().getLogger().debug("Loading...");
+    getSelf().getLogger().debug("加载中...");
     // Code for loading the mod goes here.
 
     auto modManager = std::make_shared<ls::ModManager>();
@@ -82,13 +82,13 @@ bool LeviScript::load() {
 
 bool LeviScript::enable() {
 
-    getSelf().getLogger().debug("Enabling...");
+    getSelf().getLogger().debug("启用中...");
     // Code for enabling the mod goes here.
     return true;
 }
 
 bool LeviScript::disable() {
-    getSelf().getLogger().debug("Disabling...");
+    getSelf().getLogger().debug("卸载中...");
     // Code for disabling the mod goes here.
     return true;
 }

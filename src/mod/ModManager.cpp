@@ -39,10 +39,10 @@ ModManager::ModManager() : ll::mod::ModManager(ModManagerName) {}
 ll::Expected<> ModManager::load(ll::mod::Manifest manifest) {
     auto& logger = levi_script::LeviScript::getInstance().getSelf().getLogger();
 
-    logger.info("loading mod {}", manifest.name);
+    logger.info("加载模组 {}", manifest.name);
 
     if (hasMod(manifest.name)) {
-        return ll::makeStringError("mod already loaded");
+        return ll::makeStringError("模组已经加载");
     }
 
     auto scriptEngine = EngineManager::newEngine(manifest.name);
@@ -69,7 +69,7 @@ ll::Expected<> ModManager::load(ll::mod::Manifest manifest) {
             // loadFile failed, try eval
             auto pluginEntryContent = ll::file_utils::readFile(entryPath);
             if (!pluginEntryContent) {
-                return ll::makeStringError(fmt::format("Failed to read plugin entry at {}", entryPath.string()));
+                return ll::makeStringError(fmt::format("读取模组入口错误: {}", entryPath.string()));
             }
             scriptEngine->eval(pluginEntryContent.value(), entryPath.u8string());
         }
@@ -86,7 +86,7 @@ ll::Expected<> ModManager::load(ll::mod::Manifest manifest) {
     } catch (const Exception& e) {
         EngineScope engineScope(scriptEngine.get());
         auto        error = ll::makeStringError(
-            fmt::v10::format("加载插件 {} 失败 信息: {}\n{}", manifest.name, e.message(), e.stacktrace())
+            fmt::v10::format("加载模组 {} 失败 信息: {}\n{}", manifest.name, e.message(), e.stacktrace())
         );
         ExitEngineScope exit;
         // LLSERemoveTimeTaskData(&scriptEngine);
@@ -115,7 +115,7 @@ ll::Expected<> ModManager::unload(std::string_view name) {
 
         auto mod = std::static_pointer_cast<Mod>(getMod(name));
 
-        logger.info("Unloading plugin {}", name);
+        logger.info("卸载模组 {}", name);
 
         auto scriptEngine = EngineManager::getEngine(std::string(name));
 
@@ -126,7 +126,7 @@ ll::Expected<> ModManager::unload(std::string_view name) {
 
         return {};
     } catch (const std::exception& e) {
-        return ll::makeStringError(fmt::v10::format("卸载插件 {} 失败 信息: {}", name, e.what()));
+        return ll::makeStringError(fmt::v10::format("卸载模组 {} 失败 信息: {}", name, e.what()));
     }
 }
 
