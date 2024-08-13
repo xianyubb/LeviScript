@@ -6,12 +6,21 @@ add_repositories("liteldev-repo https://github.com/LiteLDev/xmake-repo.git")
 -- add_requires("levilamina develop") to use develop version
 -- please note that you should add bdslibrary yourself if using dev version
 add_requires("levilamina")
+add_requires("quickjs")
+add_requires("scriptx main", {configs={backend="QuickJs"}})
+add_requires("dyncall")
 
 if not has_config("vs_runtime") then
     set_runtimes("MD")
 end
 
-target("my-mod") -- Change this to your mod name.
+
+
+option("backend")
+    set_default("quickjs")
+    set_values("quickjs")
+
+target("LeviScript") -- Change this to your mod name.
     add_cxflags(
         "/EHa",
         "/utf-8",
@@ -27,12 +36,15 @@ target("my-mod") -- Change this to your mod name.
     add_files("src/**.cpp")
     add_includedirs("src")
     add_packages("levilamina")
+    add_packages("scriptx")
+    add_packages("dyncall")
     add_shflags("/DELAYLOAD:bedrock_server.dll") -- To use symbols provided by SymbolProvider.
     set_exceptions("none") -- To avoid conflicts with /EHa.
     set_kind("shared")
     set_languages("c++20")
+    set_policy("check.auto_ignore_flags", false)
     set_symbols("debug")
-
+    add_defines("SCRIPT_ENGINE_BACKEND_QUICKJS")
     after_build(function (target)
         local mod_packer = import("scripts.after_build")
 

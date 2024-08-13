@@ -1,17 +1,28 @@
 #pragma once
+#include "mod/ModManager.h"
+#include "utils/UsingScriptX.h"
 
 #include "ll/api/mod/NativeMod.h"
 
-namespace my_mod {
 
-class MyMod {
+std::shared_ptr<ScriptEngine> createEngine();
+
+namespace {
+auto engine = createEngine();
+};
+
+namespace levi_script {
+
+[[nodiscard]] auto getModManager() -> ls::ModManager&;
+class LeviScript {
 
 public:
-    static MyMod& getInstance();
+    static LeviScript& getInstance();
 
-    MyMod(ll::mod::NativeMod& self) : mSelf(self) {}
+    LeviScript(ll::mod::NativeMod& self) : mSelf(self) {}
 
     [[nodiscard]] ll::mod::NativeMod& getSelf() const { return mSelf; }
+
 
     /// @return True if the mod is loaded successfully.
     bool load();
@@ -30,4 +41,4 @@ private:
     ll::mod::NativeMod& mSelf;
 };
 
-} // namespace my_mod
+} // namespace levi_script
