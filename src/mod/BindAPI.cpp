@@ -1,4 +1,4 @@
-
+#include "API/EventAPI/EventAPI.h"
 #include "engine/EngineOwnData.h"
 #include "utils/UsingScriptX.h"
 #include <string>
@@ -14,4 +14,7 @@ Local<Value> Log(const std::string& str) {
     return Boolean::newBoolean(false);
 }
 
-void BindAPI(UniqueEnginePtr& engine) { engine->set("log", Function::newFunction(&Log)); }
+void BindAPI(UniqueEnginePtr& engine) {
+    engine->set("log", Function::newFunction(&Log));
+    engine->registerNativeClass(McEventClassBuilder);
+}

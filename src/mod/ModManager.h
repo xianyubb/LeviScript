@@ -22,4 +22,4 @@ private:
     ll::Expected<> unload(std::string_view name) override;
 };
 
-} // namespace lse
+} // namespace ls

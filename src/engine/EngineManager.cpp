@@ -7,6 +7,7 @@
 #include "utils/UsingScriptX.h"
 
 // #include <map>
+#include <algorithm>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -17,15 +18,13 @@
 
 ///////////////////////////////// API /////////////////////////////////
 
-bool EngineManager::unregisterEngine(const UniqueEnginePtr& engine) {
+bool EngineManager::unregisterEngine(UniqueEnginePtr& engine) {
     std::unique_lock<std::shared_mutex> lock(globalShareData->engineVectorLock);
-    for (auto _engine = globalShareData->globalEngineVector.begin();
-         _engine != globalShareData->globalEngineVector.end();
-         ++_engine)
-        if (*_engine == engine.get()) {
-            globalShareData->globalEngineVector.erase(_engine);
-            return true;
-        }
+    globalShareData->globalEngineVector.erase(std::find_if(
+        globalShareData->globalEngineVector.begin(),
+        globalShareData->globalEngineVector.end(),
+        [&](const ScriptEngine* _engine) { return _engine == engine.get(); }
+    ));
     return false;
 }
 
@@ -35,7 +34,7 @@ bool EngineManager::registerEngine(UniqueEnginePtr& engine) {
     return true;
 }
 
-UniqueEnginePtr EngineManager::newEngine(std::string& pluginName, bool isHotLoad) {
+UniqueEnginePtr EngineManager::newEngine(std::string& modName) {
     std::unique_ptr<ScriptEngine, ScriptEngine::Deleter> engine = nullptr;
 
     // #if !defined(SCRIPTX_BACKEND_WEBASSEMBLY)
@@ -47,8 +46,8 @@ UniqueEnginePtr EngineManager::newEngine(std::string& pluginName, bool isHotLoad
 
     engine->setData(std::make_shared<EngineOwnData>());
     registerEngine(engine);
-    if (!pluginName.empty()) {
-        engine->getData<EngineOwnData>()->modName = pluginName;
+    if (!modName.empty()) {
+        engine->getData<EngineOwnData>()->modName = modName;
     }
     return engine;
 }
@@ -84,10 +83,12 @@ std::vector<ScriptEngine*> EngineManager::getGlobalEngines() {
 
 UniqueEnginePtr EngineManager::getEngine(const std::string& name, bool onlyLocalEngine) {
     std::shared_lock<std::shared_mutex> lock(globalShareData->engineVectorLock);
-    for (ScriptEngine*& _engine : globalShareData->globalEngineVector) {
+    for (auto& _engine : globalShareData->globalEngineVector) {
         if (onlyLocalEngine && getEngineType(_engine) != "JS") continue;
-        auto ownerData = ENGINE_GET_DATA(_engine);
-        auto filename  = ll::string_utils::u8str2str(
+        UniqueEnginePtr engine(_engine);
+        auto            ownerData = engine.get()->getData<EngineOwnData>();
+        if (ownerData == nullptr) continue;
+        auto filename = ll::string_utils::u8str2str(
             std::filesystem::path(ll::string_utils::str2wstr(ownerData->modFileOrDirPath)).filename().u8string()
         );
         if (ownerData->modName == name || filename == name) {

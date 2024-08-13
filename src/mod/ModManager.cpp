@@ -46,12 +46,12 @@ ll::Expected<> ModManager::load(ll::mod::Manifest manifest) {
     }
 
     auto scriptEngine = EngineManager::newEngine(manifest.name);
-    auto  mod          = std::make_shared<Mod>(manifest);
+    auto mod          = std::make_shared<Mod>(manifest);
 
     try {
         script::EngineScope engineScope(scriptEngine.get());
 
-        // Set plugins's logger title
+        // Set mods's logger title
         ENGINE_OWN_DATA()->logger.title = manifest.name;
         ENGINE_OWN_DATA()->modName      = manifest.name;
 
@@ -59,19 +59,19 @@ ll::Expected<> ModManager::load(ll::mod::Manifest manifest) {
 
 #ifdef SCRIPT_ENGINE_BACKEND_QUICKJS
         // Try loadFile
-        auto modDir                            = std::filesystem::canonical(ll::mod::getModsRoot() / manifest.name);
-        auto entryPath                         = modDir / manifest.entry;
+        auto modDir                         = std::filesystem::canonical(ll::mod::getModsRoot() / manifest.name);
+        auto entryPath                      = modDir / manifest.entry;
         ENGINE_OWN_DATA()->modFileOrDirPath = ll::string_utils::u8str2str(entryPath.u8string());
 
         try {
             scriptEngine->loadFile(entryPath.u8string());
         } catch (const script::Exception&) {
             // loadFile failed, try eval
-            auto pluginEntryContent = ll::file_utils::readFile(entryPath);
-            if (!pluginEntryContent) {
+            auto modEntryContent = ll::file_utils::readFile(entryPath);
+            if (!modEntryContent) {
                 return ll::makeStringError(fmt::format("读取模组入口错误: {}", entryPath.string()));
             }
-            scriptEngine->eval(pluginEntryContent.value(), entryPath.u8string());
+            scriptEngine->eval(modEntryContent.value(), entryPath.u8string());
         }
         if (ll::getServerStatus() == ll::ServerStatus::Running) { // Is hot load
             // LLSECallEventsOnHotLoad(&scriptEngine);
@@ -97,8 +97,7 @@ ll::Expected<> ModManager::load(ll::mod::Manifest manifest) {
 
         scriptEngine->getData().reset();
 
-        auto _engine = EngineManager::getEngine(std::string(manifest.name));
-        EngineManager::unregisterEngine(_engine);
+        EngineManager::unregisterEngine(scriptEngine);
 
         return error;
     }
@@ -118,6 +117,10 @@ ll::Expected<> ModManager::unload(std::string_view name) {
         logger.info("卸载模组 {}", name);
 
         auto scriptEngine = EngineManager::getEngine(std::string(name));
+
+        scriptEngine->getData().reset();
+
+        EngineManager::unregisterEngine(scriptEngine);
 
 #ifdef SCRIPT_ENGINE_BACKEND_QUICKJS
         scriptEngine->destroy();
