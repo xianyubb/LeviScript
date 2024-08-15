@@ -3,7 +3,7 @@
 #include "ll/api/event/ListenerBase.h"
 #include "utils/UsingScriptX.h"
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 
@@ -18,7 +18,9 @@ struct McEventData {
     ll::event::ListenerPtr listener;
 };
 
-extern std::map<std::string, std::vector<McEventData>> eventListener;
+extern std::unordered_map<std::string, std::vector<McEventData>> eventAfterServerStartedListener;
+extern std::unordered_map<std::string, std::vector<McEventData>> eventBeforeServerStartedListener;
+
 
 class McEventClass : public script::ScriptClass {
 public:
@@ -28,8 +30,9 @@ public:
 };
 
 
+void EnableBeforeServerStartedListener();
 
-void EnableListener();
+void EnableAfterServerStartedListener();
 
-extern script::ClassDefine<McEventClass> McEventClassBuilder;
-
+    extern script::ClassDefine<McEventClass>
+        McEventClassBuilder;

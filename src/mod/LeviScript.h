@@ -1,15 +1,7 @@
 #pragma once
 #include "mod/ModManager.h"
-#include "utils/UsingScriptX.h"
 
 #include "ll/api/mod/NativeMod.h"
-
-
-std::shared_ptr<ScriptEngine> createEngine();
-
-namespace {
-auto engine = createEngine();
-};
 
 namespace levi_script {
 

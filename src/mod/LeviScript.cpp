@@ -2,14 +2,11 @@
 #include <memory>
 
 
-#include "mod/LeviScript.h"
+#include "API/EventAPI/EventAPI.h"
 #include "engine/GlobalShareData.h"
 #include "engine/LocalShareData.h"
-#include "mod/Mod.h"
+#include "mod/LeviScript.h"
 #include "mod/ModManager.h"
-
-
-#include "ScriptX/ScriptX.h"
 
 
 #include "ll/api/mod/ModManager.h"
@@ -17,20 +14,6 @@
 #include "ll/api/mod/NativeMod.h"
 #include "ll/api/mod/RegisterHelper.h"
 
-
-
-using namespace script;
-
-std::shared_ptr<script::ScriptEngine> createEngine() {
-#if !defined(SCRIPTX_BACKEND_WEBASSEMBLY)
-    return std::shared_ptr<script::ScriptEngine>{
-        new script::ScriptEngineImpl(nullptr),
-        script::ScriptEngine::Deleter()
-    };
-#else
-    return std::shared_ptr<script::ScriptEngine>{script::ScriptEngineImpl::instance(), [](void*) {}};
-#endif
-}
 
 namespace levi_script {
 
@@ -41,6 +24,7 @@ std::shared_ptr<ls::ModManager> ModManager;
 void initializeLegacyStuff() {
     InitLocalShareData();
     InitGlobalShareData();
+    // EnableBeforeServerStartedListener();
     // InitSafeGuardRecord();
     // EconomySystem::init();
 #ifdef LEGACY_SCRIPT_ENGINE_BACKEND_PYTHON
@@ -59,7 +43,7 @@ void initializeLegacyStuff() {
     // InitMessageSystem();
     // MoreGlobal::Init();
 }
-};
+}; // namespace
 
 static std::unique_ptr<LeviScript> instance;
 
@@ -73,9 +57,11 @@ bool LeviScript::load() {
 
     auto& ModManagerRegistry = ll::mod::ModManagerRegistry::getInstance();
 
-    const auto& a = ModManagerRegistry.addManager(modManager);
+    bool a;
+    a = ModManagerRegistry.addManager(modManager);
 
     initializeLegacyStuff();
+    // EnableBeforeServerStartedListener();
     return true;
 }
 
@@ -83,6 +69,7 @@ bool LeviScript::load() {
 bool LeviScript::enable() {
 
     getSelf().getLogger().debug("启用中...");
+    EnableAfterServerStartedListener();
     // Code for enabling the mod goes here.
     return true;
 }

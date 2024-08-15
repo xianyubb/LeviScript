@@ -4,6 +4,7 @@
 #include "mod/LeviScript.h"
 #include "mod/Mod.h"
 // #include "mod/"
+#include "API/EventAPI/EventAPI.h"
 #include "utils/UsingScriptX.h"
 
 
@@ -25,7 +26,7 @@
 constexpr auto ModManagerName = "ls-quickjs";
 
 // Do not use legacy headers directly, otherwise there will be tons of errors.
-void BindAPI(UniqueEnginePtr& engine);
+void BindAPI(ScriptEngine* engine);
 // void LLSERemoveTimeTaskData(script::ScriptEngine* engine);
 // auto LLSERemoveAllEventListeners(script::ScriptEngine* engine) -> bool;
 // auto LLSERemoveCmdRegister(script::ScriptEngine* engine) -> bool;
@@ -49,7 +50,7 @@ ll::Expected<> ModManager::load(ll::mod::Manifest manifest) {
     auto mod          = std::make_shared<Mod>(manifest);
 
     try {
-        script::EngineScope engineScope(scriptEngine.get());
+        script::EngineScope engineScope(scriptEngine);
 
         // Set mods's logger title
         ENGINE_OWN_DATA()->logger.title = manifest.name;
@@ -62,7 +63,6 @@ ll::Expected<> ModManager::load(ll::mod::Manifest manifest) {
         auto modDir                         = std::filesystem::canonical(ll::mod::getModsRoot() / manifest.name);
         auto entryPath                      = modDir / manifest.entry;
         ENGINE_OWN_DATA()->modFileOrDirPath = ll::string_utils::u8str2str(entryPath.u8string());
-
         try {
             scriptEngine->loadFile(entryPath.u8string());
         } catch (const script::Exception&) {
@@ -84,7 +84,7 @@ ll::Expected<> ModManager::load(ll::mod::Manifest manifest) {
         mod->onEnable([](ll::mod::Mod&) { return true; });
         mod->onDisable([](ll::mod::Mod&) { return true; });
     } catch (const Exception& e) {
-        EngineScope engineScope(scriptEngine.get());
+        EngineScope engineScope(scriptEngine);
         auto        error = ll::makeStringError(
             fmt::v10::format("加载模组 {} 失败 信息: {}\n{}", manifest.name, e.message(), e.stacktrace())
         );
@@ -111,8 +111,11 @@ ll::Expected<> ModManager::unload(std::string_view name) {
     auto& logger = levi_script::LeviScript::getInstance().getSelf().getLogger();
 
     try {
+        // auto mod = std::static_pointer_cast<Mod>(getMod(name));
 
-        auto mod = std::static_pointer_cast<Mod>(getMod(name));
+        // if (mod == nullptr) {
+        //     return {};
+        // }
 
         logger.info("卸载模组 {}", name);
 
@@ -125,7 +128,7 @@ ll::Expected<> ModManager::unload(std::string_view name) {
 #ifdef SCRIPT_ENGINE_BACKEND_QUICKJS
         scriptEngine->destroy();
 #endif
-        eraseMod(name);
+        eraseMod(name); // TODO: handle unload errors
 
         return {};
     } catch (const std::exception& e) {

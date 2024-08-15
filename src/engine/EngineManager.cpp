@@ -18,27 +18,27 @@
 
 ///////////////////////////////// API /////////////////////////////////
 
-bool EngineManager::unregisterEngine(UniqueEnginePtr& engine) {
+bool EngineManager::unregisterEngine(ScriptEngine* engine) {
     std::unique_lock<std::shared_mutex> lock(globalShareData->engineVectorLock);
     globalShareData->globalEngineVector.erase(std::find_if(
         globalShareData->globalEngineVector.begin(),
         globalShareData->globalEngineVector.end(),
-        [&](const ScriptEngine* _engine) { return _engine == engine.get(); }
+        [&](const ScriptEngine* _engine) { return _engine == engine; }
     ));
     return false;
 }
 
-bool EngineManager::registerEngine(UniqueEnginePtr& engine) {
+bool EngineManager::registerEngine(ScriptEngine* engine) {
     std::unique_lock<std::shared_mutex> lock(globalShareData->engineVectorLock);
-    globalShareData->globalEngineVector.push_back(engine.get());
+    globalShareData->globalEngineVector.push_back(engine);
     return true;
 }
 
-UniqueEnginePtr EngineManager::newEngine(std::string& modName) {
-    std::unique_ptr<ScriptEngine, ScriptEngine::Deleter> engine = nullptr;
+ScriptEngine* EngineManager::newEngine(std::string& modName) {
+    ScriptEngine* engine = nullptr;
 
     // #if !defined(SCRIPTX_BACKEND_WEBASSEMBLY)
-    engine = std::unique_ptr<ScriptEngine, ScriptEngine::Deleter>(new ScriptEngineImpl());
+    engine = new ScriptEngineImpl();
     // #else
     // engine = ScriptEngineImpl::instance();
     // #endif
@@ -52,12 +52,12 @@ UniqueEnginePtr EngineManager::newEngine(std::string& modName) {
     return engine;
 }
 
-bool EngineManager::isValid(UniqueEnginePtr& engine, bool onlyCheckLocal) {
+bool EngineManager::isValid(ScriptEngine* engine, bool onlyCheckLocal) {
     std::shared_lock<std::shared_mutex> lock(globalShareData->engineVectorLock);
     for (auto i = globalShareData->globalEngineVector.begin(); i != globalShareData->globalEngineVector.end(); ++i)
-        if (*i == engine.get()) {
+        if (*i == engine) {
             if (engine->isDestroying()) return false;
-            if (onlyCheckLocal && getEngineType(engine.get()) != "JS") return false;
+            if (onlyCheckLocal && getEngineType(engine) != "JS") return false;
             else return true;
         }
     return false;
@@ -81,7 +81,7 @@ std::vector<ScriptEngine*> EngineManager::getGlobalEngines() {
     return res;
 }
 
-UniqueEnginePtr EngineManager::getEngine(const std::string& name, bool onlyLocalEngine) {
+ScriptEngine* EngineManager::getEngine(const std::string& name, bool onlyLocalEngine) {
     std::shared_lock<std::shared_mutex> lock(globalShareData->engineVectorLock);
     for (auto& _engine : globalShareData->globalEngineVector) {
         if (onlyLocalEngine && getEngineType(_engine) != "JS") continue;
@@ -92,7 +92,7 @@ UniqueEnginePtr EngineManager::getEngine(const std::string& name, bool onlyLocal
             std::filesystem::path(ll::string_utils::str2wstr(ownerData->modFileOrDirPath)).filename().u8string()
         );
         if (ownerData->modName == name || filename == name) {
-            return UniqueEnginePtr(_engine);
+            return _engine;
         }
     }
     return nullptr;
