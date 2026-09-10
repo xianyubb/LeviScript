@@ -99,13 +99,17 @@ def require_str(obj: Dict[str, Any], key: str, where: str) -> str:
 def emit_class(out: List[str], cls: Dict[str, Any]) -> None:
     script_name = require_str(cls, "scriptName", "class")
     cpp_type = require_str(cls, "cppType", f"class '{script_name}'")
-    base = cls.get("base")
+    base = cls.get("base")                   # scriptName of a base bound in the SAME file
+    base_cpp_type = cls.get("baseCppType")   # resolved C++ base type (may live in another file)
 
-    out.append(f"    // -- {script_name}" + (f" : {base}" if base else "") + " " + "-" * 20)
+    label = base or (base_cpp_type.split("::")[-1] if base_cpp_type else None)
+    out.append(f"    // -- {script_name}" + (f" : {label}" if label else "") + " " + "-" * 20)
     if base:
-        base_cpp = None
-        # base cppType is resolved by the caller through the class map; placeholder
+        # base cppType is resolved by the caller through the same-spec class map
         out.append(f"    ClassBinder::registerClass<{cpp_type}, {{BASE_CPP}}>(engine, \"{script_name}\");")
+    elif base_cpp_type:
+        # cross-file base: the C++ type is known even though the base is bound elsewhere
+        out.append(f"    ClassBinder::registerClass<{cpp_type}, {base_cpp_type}>(engine, \"{script_name}\");")
     else:
         out.append(f"    ClassBinder::registerClass<{cpp_type}>(engine, \"{script_name}\");")
 
@@ -164,9 +168,17 @@ def generate_cpp(spec: Dict[str, Any]) -> str:
     out.append('#include "script/bind/Bind.h"')
     out.append("")
 
-    # Native-class trait declarations must live at global scope.
+    # Native-class trait declarations must live at global scope. Cross-file base
+    # types (extraNativeClasses) are declared here too so registerClass<Derived, Base>
+    # compiles even though Base is registered by another translation unit.
+    declared: set[str] = set()
     for cls in ordered:
         out.append(f"LS_NATIVE_CLASS({cls['cppType']})")
+        declared.add(cls["cppType"])
+    for extra in spec.get("extraNativeClasses", []):
+        if extra not in declared:
+            out.append(f"LS_NATIVE_CLASS({extra})")
+            declared.add(extra)
     out.append("")
 
     out.append("namespace ls::native::generated {")
@@ -183,11 +195,15 @@ def generate_cpp(spec: Dict[str, Any]) -> str:
     out.append("")
     out.append(f"void {function_name}(ScriptEngine& engine) {{")
     out.append("    Local<Object> global = getGlobal(engine);")
-    out.append("    // Merge into an existing namespace object when present, so generated")
-    out.append("    // bindings compose with hand-written ones (LL-style API layout) instead of")
-    out.append("    // clobbering them.")
-    out.append(f"    Local<Value>  existingNs = global.getProperty(\"{namespace}\");")
-    out.append("    Local<Object> ns = existingNs.isObject() ? Local<Object>(existingNs) : makeObject(engine);")
+    out.append("    // Walk/create the (possibly nested, e.g. \"ll.data\") namespace path,")
+    out.append("    // merging into existing objects so generated bindings compose with")
+    out.append("    // hand-written ones instead of clobbering them.")
+    parts = namespace.split(".")
+    for i, part in enumerate(parts):
+        parent = "global" if i == 0 else f"ns{i - 1}"
+        var = "ns" if i == len(parts) - 1 else f"ns{i}"
+        out.append(f"    Local<Value>  probe{i} = {parent}.getProperty(\"{part}\");")
+        out.append(f"    Local<Object> {var} = probe{i}.isObject() ? Local<Object>(probe{i}) : makeObject(engine);")
     out.append("")
 
     for cls in ordered:
@@ -208,7 +224,10 @@ def generate_cpp(spec: Dict[str, Any]) -> str:
             out.append(f"    ns.setProperty(\"{name}\", makeFunction(engine, makeNativeFunction({cpp})));")
         out.append("")
 
-    out.append(f"    global.setProperty(\"{namespace}\", ns);")
+    for i in reversed(range(len(parts))):
+        parent = "global" if i == 0 else f"ns{i - 1}"
+        child = "ns" if i == len(parts) - 1 else f"ns{i}"
+        out.append(f"    {parent}.setProperty(\"{parts[i]}\", {child});")
     out.append("}")
     out.append("")
     out.append("} // namespace ls::native::generated")

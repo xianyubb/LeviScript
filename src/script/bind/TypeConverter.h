@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
@@ -102,6 +103,23 @@ template <>
 struct ToScript<std::string_view> {
     static ValueHandle write(ScriptEngine& engine, std::string_view value) { return engine.newString(value); }
 };
+/// A std::string_view parameter borrows memory that must outlive the call. We
+/// materialize the script string into a small thread-local ring so that several
+/// string_view arguments of one call stay valid simultaneously (each read takes the
+/// next slot). Limitation: a single call with more than kSlots string_view arguments,
+/// or a callee that stores the view beyond the call, is not supported.
+template <>
+struct FromScript<std::string_view> {
+    static std::string_view read(ScriptEngine& engine, ValueHandle handle) {
+        constexpr std::size_t  kSlots = 16;
+        thread_local std::string ring[kSlots];
+        thread_local std::size_t next = 0;
+        std::string&             slot = ring[next];
+        next                        = (next + 1) % kSlots;
+        slot                        = engine.toStdString(handle);
+        return std::string_view(slot);
+    }
+};
 template <>
 struct ToScript<char const*> {
     static ValueHandle write(ScriptEngine& engine, char const* value) { return engine.newString(value ? value : ""); }
@@ -109,6 +127,25 @@ struct ToScript<char const*> {
 template <>
 struct ToScript<char*> {
     static ValueHandle write(ScriptEngine& engine, char* value) { return engine.newString(value ? value : ""); }
+};
+
+// ---------------------------------------------------------------------------
+// std::filesystem::path <-> string (pervasive across the LL API: getModDir, ...)
+// Marshalled as a UTF-8 string so path-returning/taking API functions bind.
+// ---------------------------------------------------------------------------
+template <>
+struct FromScript<std::filesystem::path> {
+    static std::filesystem::path read(ScriptEngine& engine, ValueHandle handle) {
+        std::string bytes = engine.toStdString(handle);
+        return std::filesystem::path(std::u8string(reinterpret_cast<char8_t const*>(bytes.data()), bytes.size()));
+    }
+};
+template <>
+struct ToScript<std::filesystem::path> {
+    static ValueHandle write(ScriptEngine& engine, std::filesystem::path const& value) {
+        std::u8string bytes = value.u8string();
+        return engine.newString(std::string_view(reinterpret_cast<char const*>(bytes.data()), bytes.size()));
+    }
 };
 
 // ---------------------------------------------------------------------------
@@ -207,9 +244,11 @@ struct FromScript<T&&, std::enable_if_t<!is_native_class_v<T>>> : FromScript<T> 
 
 // Declare that a C++ type is exposed to scripts through the class binder.
 // The argument must be a type name that is valid inside namespace ls::script
-// (fully qualified names such as `::mc::Player` are recommended).
-#define LS_NATIVE_CLASS(TYPE)                                                                                          \
+// (fully qualified names such as `::mc::Player` are recommended). It is variadic
+// so a specialization with commas in its template argument list (e.g.
+// `::ll::Foo<::A, ::B>`) is not split into multiple macro arguments.
+#define LS_NATIVE_CLASS(...)                                                                                           \
     namespace ls::script {                                                                                             \
     template <>                                                                                                        \
-    struct is_native_class<TYPE> : ::std::true_type {};                                                                \
+    struct is_native_class<__VA_ARGS__> : ::std::true_type {};                                                         \
     }

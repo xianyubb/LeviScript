@@ -35,6 +35,12 @@ struct function_traits<Ret(Args...)> {
 };
 template <typename Ret, typename... Args>
 struct function_traits<Ret (*)(Args...)> : function_traits<Ret(Args...)> {};
+// C++17 makes noexcept part of the function type, so a `noexcept` free function
+// (pointer) is a distinct type that needs its own specializations.
+template <typename Ret, typename... Args>
+struct function_traits<Ret(Args...) noexcept> : function_traits<Ret(Args...)> {};
+template <typename Ret, typename... Args>
+struct function_traits<Ret (*)(Args...) noexcept> : function_traits<Ret(Args...)> {};
 template <typename C, typename Ret, typename... Args>
 struct function_traits<Ret (C::*)(Args...)> : function_traits<Ret(Args...)> {};
 template <typename C, typename Ret, typename... Args>
@@ -53,9 +59,9 @@ namespace detail {
 }
 
 /// Defined after ClassBinder; wraps a native pointer without depending on the
-/// (still incomplete) ClassBinder type here.
+/// (still incomplete) ClassBinder type here. Borrowed => never instantiates ~T.
 template <typename T>
-[[nodiscard]] ValueHandle wrapNativePtr(ScriptEngine& engine, T* ptr, bool owned);
+[[nodiscard]] ValueHandle wrapNativePtrBorrowed(ScriptEngine& engine, T* ptr);
 
 /// setProperty borrows the value handle, so release the one we just created.
 inline void defineProperty(ScriptEngine& engine, ValueHandle object, std::string_view key, ValueHandle ownedValue) {
@@ -78,7 +84,7 @@ template <typename Ret>
         return kInvalidHandle;
     } else if constexpr (std::is_lvalue_reference_v<Ret> &&
                          is_native_class_v<std::remove_cv_t<std::remove_reference_t<Ret>>>) {
-        return wrapNativePtr(engine, std::addressof(result), false);
+        return wrapNativePtrBorrowed(engine, std::addressof(result));
     } else {
         using W = std::remove_cv_t<std::remove_reference_t<Ret>>;
         return ToScript<W>::write(engine, std::move(result));
@@ -316,13 +322,16 @@ public:
         ClassMeta& meta = requireMeta<T>(engine);
         meta.ctor       = [factory](ScriptEngine& e, ValueHandle, ValueHandle const* argv, int argc) -> ValueHandle {
             T* object = detail::callFreeRaw(factory, e, argv, argc, std::index_sequence_for<Args...>{});
-            return wrap(e, object, true);
+            return wrapOwned(e, object);
         };
     }
 
     // -- wrap / unwrap ------------------------------------------------------
+    /// Borrowed wrapper: does NOT own the object and never instantiates ~T (no
+    /// shared_ptr deleter), so it is safe for PIMPL types whose impl is incomplete
+    /// in the header (e.g. ll::event::EventBus).
     template <typename T>
-    static ValueHandle wrap(ScriptEngine& engine, T* ptr, bool owned) {
+    static ValueHandle wrapBorrowed(ScriptEngine& engine, T* ptr) {
         if (ptr == nullptr) {
             return engine.newNull();
         }
@@ -330,13 +339,27 @@ public:
         NativeInstance instance;
         instance.data = const_cast<void*>(static_cast<void const*>(ptr));
         instance.meta = static_cast<void*>(&meta);
-        if (owned) {
-            // shared_ptr<void> built from the typed pointer keeps the correct
-            // type-specific deleter, so the object is freed exactly once, by the
-            // last wrapper, with no leak and no manual destroy callback.
-            instance.owner = std::shared_ptr<void>(ptr);
-        }
         return engine.wrapNative(meta.prototype, instance);
+    }
+    /// Owning wrapper: takes ownership via a type-erased shared_ptr (frees the object
+    /// exactly once when the last wrapper is GC'd). Requires T to be destructible.
+    template <typename T>
+    static ValueHandle wrapOwned(ScriptEngine& engine, T* ptr) {
+        if (ptr == nullptr) {
+            return engine.newNull();
+        }
+        ClassMeta&     meta = requireMeta<T>(engine);
+        NativeInstance instance;
+        instance.data  = const_cast<void*>(static_cast<void const*>(ptr));
+        instance.meta  = static_cast<void*>(&meta);
+        instance.owner = std::shared_ptr<void>(const_cast<std::remove_const_t<T>*>(ptr));
+        return engine.wrapNative(meta.prototype, instance);
+    }
+    /// Runtime-ownership dispatch. NOTE: this compiles both paths, so borrowed
+    /// wrappers of PIMPL types must call wrapBorrowed directly (not this).
+    template <typename T>
+    static ValueHandle wrap(ScriptEngine& engine, T* ptr, bool owned) {
+        return owned ? wrapOwned(engine, ptr) : wrapBorrowed(engine, ptr);
     }
 
     /// Wrap keeping a shared_ptr alive for as long as the script object lives.
@@ -385,8 +408,8 @@ public:
 
 namespace detail {
 template <typename T>
-ValueHandle wrapNativePtr(ScriptEngine& engine, T* ptr, bool owned) {
-    return ClassBinder::wrap(engine, ptr, owned);
+ValueHandle wrapNativePtrBorrowed(ScriptEngine& engine, T* ptr) {
+    return ClassBinder::wrapBorrowed(engine, ptr);
 }
 } // namespace detail
 
@@ -413,14 +436,20 @@ struct FromScript<std::shared_ptr<T>, std::enable_if_t<is_native_class_v<T>>> {
         return std::shared_ptr<T>(raw, [](T*) {}); // non owning, valid during the call
     }
 };
+/// A native class taken BY VALUE: copy the wrapped instance out (T must be copy
+/// constructible). Lets the closure binder handle signatures like `f(BlockPos)`.
+template <typename T>
+struct FromScript<T, std::enable_if_t<is_native_class_v<T> && !std::is_reference_v<T> && !std::is_pointer_v<T>>> {
+    static T read(ScriptEngine& engine, ValueHandle handle) { return *ClassBinder::unwrap<T>(engine, handle); }
+};
 
 template <typename T>
 struct ToScript<T*, std::enable_if_t<is_native_class_v<T>>> {
-    static ValueHandle write(ScriptEngine& engine, T* ptr) { return ClassBinder::wrap(engine, ptr, false); }
+    static ValueHandle write(ScriptEngine& engine, T* ptr) { return ClassBinder::wrapBorrowed(engine, ptr); }
 };
 template <typename T>
 struct ToScript<T&, std::enable_if_t<is_native_class_v<T>>> {
-    static ValueHandle write(ScriptEngine& engine, T& ref) { return ClassBinder::wrap(engine, std::addressof(ref), false); }
+    static ValueHandle write(ScriptEngine& engine, T& ref) { return ClassBinder::wrapBorrowed(engine, std::addressof(ref)); }
 };
 template <typename T>
 struct ToScript<std::shared_ptr<T>, std::enable_if_t<is_native_class_v<T>>> {
@@ -433,7 +462,15 @@ struct ToScript<std::shared_ptr<T>, std::enable_if_t<is_native_class_v<T>>> {
 template <typename T>
 struct ToScript<std::unique_ptr<T>, std::enable_if_t<is_native_class_v<T>>> {
     static ValueHandle write(ScriptEngine& engine, std::unique_ptr<T> ptr) {
-        return ClassBinder::wrap(engine, ptr.release(), true);
+        return ClassBinder::wrapOwned(engine, ptr.release());
+    }
+};
+/// A native class returned BY VALUE: wrap an owned copy (freed on GC). Lets the
+/// closure binder handle signatures like `BlockPos east() const`.
+template <typename T>
+struct ToScript<T, std::enable_if_t<is_native_class_v<T> && !std::is_reference_v<T> && !std::is_pointer_v<T>>> {
+    static ValueHandle write(ScriptEngine& engine, T value) {
+        return ClassBinder::wrapOwned(engine, new T(std::move(value)));
     }
 };
 

@@ -1,0 +1,14 @@
+{
+  "scriptNamespace": "ct",
+  "functionName": "bindGeneratedClosureApi",
+  "std": "c++20",
+  "headers": ["tests/closure/A.h"],
+  "includeDirs": ["tests/closure"],
+  "defines": [],
+  "namespaces": ["ct"],
+  "include": ["^A$"],
+  "closure": true,
+  "emitIncludes": ["A.h", "B.h", "C.h", "D.h"],
+  "knownNativeClasses": [],
+  "allowStringView": false
+}

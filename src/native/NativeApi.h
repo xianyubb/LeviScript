@@ -23,7 +23,6 @@ namespace generated {
 // Bindings produced from real LeviLamina/Minecraft headers by tools/autobind
 // (sources live in src/native/generated/, one file per source header). Each merges
 // into the matching hand-written namespace so the script API follows LL's layout.
-void bindGeneratedLlDataApi(ls::script::ScriptEngine& engine); // ll/api/data/Version.h -> ll.Version
 } // namespace generated
 
 /// Bind every native API group into the engine (called once per plugin load).

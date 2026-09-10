@@ -23,9 +23,6 @@ void bindApis(ScriptEngine& engine) {
     bindLoggerApi(engine);
     bindSystemApi(engine);
     bindLlApi(engine);
-    // Generated from real headers (tools/autobind). Runs after bindLlApi so it can
-    // merge into the existing `ll` namespace object.
-    generated::bindGeneratedLlDataApi(engine); // ll/api/data/Version.h -> ll.Version
     bindMcApi(engine);
 }
 

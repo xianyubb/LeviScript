@@ -66,6 +66,7 @@ declaration's own source line and recorded in the skip report. Plain `LLAPI`
   "emitIncludes": ["mc/Player.h"],      // #include lines added to the generated file
   "knownNativeClasses": ["::mc::Block"],// treat these as already-bound native types
   "allowStringView": false,
+  "closure": false,                    // auto-bind unfamiliar referenced classes (see below)
   "templateClasses": [
     { "templateOf": "::mc::AABB", "cpp": "::mc::AABB<float>", "scriptName": "AABBf" }
   ],
@@ -137,10 +138,65 @@ properties + `to_string()`/`isIdenticalTo()`). To bind another header: drop a ne
 config into `config/` (one header each), re-run `generate_all.py`, and call the
 new function from `bindApis`.
 
-> Real `mc/` headers live under `mc/deps/...` with deep dependency trees and use
-> many value-type / template / `Expected<>` signatures the binder cannot marshal;
-> they parse with the same config but yield sparse coverage. `ll/api/` headers are
-> the low-risk starting point (they already compile inside the mod).
+> Real `mc/` headers (under `mc/deps/...`, `mc/world/...`) parse and bind with the
+> same config - `BlockPos` is wired into the mod and verified on a real server.
+> Coverage is still partial: complex signatures (`Expected<>`, `Generator<>`,
+> `std::variant`, `string_view`) and fields hidden in CRTP bases are skipped and
+> reported rather than silently dropped.
+
+## Closure binding ("bind every unfamiliar class you meet")
+
+Set `"closure": true` to make the generator bind the **transitive closure** of the
+seed classes instead of skipping methods that reference not-yet-bound types:
+
+- Starting from the seed (the `namespaces` / `include` selection), it scans every
+  bound class's member signatures (return types, parameters, fields, bases) for
+  referenced native classes and **binds those too**, recursing until no new class
+  appears. Termination is guaranteed by a visited set (each class bound once); there
+  are intentionally **no depth/count caps**.
+- **Cross-header**: a referenced class that is only forward-declared in the parsed
+  files is resolved by the LL/MC "header named after its class" convention
+  (`Vec3` -> `Vec3.h`), which is then parsed and indexed on demand (`HeaderResolver`).
+  If a definition cannot be located it is reported and left to the `NativePointer`
+  fallback (pointers) or skipped (references).
+- The generated file `#include`s the defining header of **every** bound class (not
+  just the seed header), so cross-header types are complete at compile time.
+- **Templates**: a concrete specialization encountered (e.g. `intN3<BlockPos>`,
+  `floatN3<Vec3>`) is auto-bound as that instantiation (trust mode). Specializations
+  that still carry *dependent* arguments (`intN3<BaseType>`,
+  `FloatN<type-parameter-0-0, ...>`, `boolN<sizeof...(C)>`) are rejected - they are
+  patterns, not concrete types. The generic template is never walked, so its
+  dependent members do not leak in.
+- `std::` types are never pulled in (they are not LL/MC API).
+
+Value-type usage of a closure-bound class (returned/passed **by value**, e.g.
+`BlockPos east()`) is marshalled by the binder's native by-value conversions
+(`ToScript<T>` wraps an owned copy; `FromScript<T>` copies out of the wrapper).
+
+Worked examples (both shipped in `config/`):
+
+- `ll_data_version.json` - `ll/api/data/Version.h` with `closure` -> binds `Version`
+  **plus** `PreRelease` and `detail::from_chars_result` (discovered from the
+  `optional<PreRelease>` field and the `from_chars` return type). Wired into the mod
+  and verified on a real server.
+- `mc_blockpos.json` - `mc/world/level/BlockPos.h` with `closure` ->
+  `1 seed -> 6 concrete classes`: `BlockPos`, `intN3<BlockPos>` (the CRTP base that
+  holds x/y/z), `Vec3`, `floatN3<Vec3>`, `Vec2`, `floatN2<Vec2>` - `Vec3`/`Vec2`
+  resolved cross-header, the three specializations auto-instantiated. **Wired into
+  the mod and verified on a real server**: `mc.BlockPos.ZERO().toString()` ->
+  `Pos(0,0,0)`, `MAX()` -> `Pos(2147483647,...)`, `zero.east().toString()` ->
+  `Pos(1,0,0)` (a by-value return). `MCAPI` (MC-binary) symbols link and run through
+  LeviLamina's bedrock symbol provider (`bedrock_runtime_api.lib`).
+
+> Inheritance is reflected end to end: a template-specialization base is matched by
+> its canonical spelling, so the codegen emits
+> `registerClass<::BlockPos, ::ll::math::intN3<BlockPos>>`, the `.d.ts` says
+> `class BlockPos extends intN3BlockPos`, and at runtime `zero instanceof
+> mc.intN3BlockPos` is `true` (verified on a real server). Remaining gap: a CRTP
+> base's *own members* are not emitted yet - `intN3<BlockPos>`'s x/y/z live in a
+> deeper dependent base (`IntN<...>`), so the bound base class is currently empty;
+> flattening inherited members is future work. Overloaded methods also collapse to
+> the last emitted overload (JS has no overloading).
 
 ## Self test
 
@@ -164,3 +220,14 @@ python parse_headers.py tests/macro_skip.json --spec out.json --report out_repor
 Expected: `keepFunc` + `Keep` (`keepMethod`, `field`) bound (plain `LLAPI`);
 `dropNodiscard`, `dropMcNative`, `Drop`, `Keep::dropMethodNd`, `Keep::dropMethodMc`
 skipped (`LLNDAPI` / `MCNAPI`).
+
+`tests/closure/` checks transitive closure binding across headers: seed `A`
+(`tests/closure/A.h`) references `B` (pointer) and `C` (reference), and `C`
+references `D`. With `"closure": true`:
+
+```powershell
+python parse_headers.py tests/closure.json --spec out.json   # -> closure: 1 seed -> 4 bound classes
+```
+
+Expected: `A`, `B`, `C`, `D` all bound (B.h/C.h/D.h auto-resolved), and A's
+`getB`/`useC` and C's `getD` become bindable; nothing skipped.

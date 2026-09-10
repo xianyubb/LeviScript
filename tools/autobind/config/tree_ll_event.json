@@ -1,13 +1,14 @@
 {
-  "//": "Real LeviLamina header binding: ll/api/data/Version.h -> script `ll.Version`.",
-  "//note": "Merges into the hand-written `ll` namespace (see autobind.py). LLNDAPI/MCNAPI-marked decls are skipped by parse_headers.py.",
+  "//": "TEST config: export only ll/api/event to a scratch dir to validate cross-header/template-base inheritance.",
   "libclangPath": "C:/Program Files/LLVM/bin/libclang.dll",
   "std": "c++20",
-  "scriptNamespace": "ll",
-  "functionName": "bindGeneratedLlDataApi",
-  "headers": [
-    "C:/Users/xianyu/AppData/Local/.xmake/packages/l/levilamina/26.40.0/e3003356c13f41a6b95d7b7063363cc6/include/ll/api/data/Version.h"
-  ],
+  "headerRoot": "C:/Users/xianyu/AppData/Local/.xmake/packages/l/levilamina/26.40.0/e3003356c13f41a6b95d7b7063363cc6/include/ll/api/event",
+  "outputRoot": "build/_tev",
+  "clientOutputRoot": "build/_tev_client",
+  "namespacePrefix": "ll",
+  "closureRoots": ["ll", "mc"],
+  "closureRecurseRoots": ["ll"],
+  "allowStringView": true,
   "includeDirs": [
     "C:/Users/xianyu/AppData/Local/.xmake/packages/l/levilamina/26.40.0/e3003356c13f41a6b95d7b7063363cc6/include",
     "C:/Users/xianyu/AppData/Local/.xmake/packages/e/entt/v3.15.0/18a7c66ceb6a4245aa7ca5b637cbf536/include",
@@ -33,18 +34,7 @@
     "C:/Users/xianyu/AppData/Local/.xmake/packages/q/quickjs-ng/v0.15.1/ae851f1d0eb849baa13655dd6c550785/include"
   ],
   "defines": [
-    "LL_PLAT_S",
-    "NOMINMAX",
-    "UNICODE",
-    "_UNICODE",
-    "ENTT_PACKED_PAGE=128",
-    "ENTT_SPARSE_PAGE=2048",
-    "ENTT_NO_MIXIN",
-    "NDEBUG"
-  ],
-  "namespaces": ["ll::data"],
-  "include": ["^Version$"],
-  "emitIncludes": ["ll/api/data/Version.h"],
-  "knownNativeClasses": [],
-  "allowStringView": false
+    "LL_PLAT_S", "NOMINMAX", "UNICODE", "_UNICODE",
+    "ENTT_PACKED_PAGE=128", "ENTT_SPARSE_PAGE=2048", "ENTT_NO_MIXIN", "NDEBUG"
+  ]
 }

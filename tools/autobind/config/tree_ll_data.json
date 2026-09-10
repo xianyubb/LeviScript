@@ -1,13 +1,12 @@
 {
-  "//": "Real Minecraft header binding: mc/world/level/BlockPos.h -> script `mc.BlockPos`.",
-  "//note": "Closure auto-binds BlockPos + Vec3/Vec2/intN3<BlockPos>/floatN3<Vec3>/floatN2<Vec2>. MCAPI methods link via LeviLamina's bedrock symbol provider and were verified at runtime (ZERO/MAX/east/toString). x/y/z live in the CRTP base intN3<BlockPos> and are not yet exposed as fields.",
+  "//": "Validation run: export only ll/api/data (12 headers) to a staging dir.",
   "libclangPath": "C:/Program Files/LLVM/bin/libclang.dll",
   "std": "c++20",
-  "scriptNamespace": "mc",
-  "functionName": "bindGeneratedMcBlockPosApi",
-  "headers": [
-    "C:/Users/xianyu/AppData/Local/.xmake/packages/l/levilamina/26.40.0/e3003356c13f41a6b95d7b7063363cc6/include/mc/world/level/BlockPos.h"
-  ],
+  "headerRoot": "C:/Users/xianyu/AppData/Local/.xmake/packages/l/levilamina/26.40.0/e3003356c13f41a6b95d7b7063363cc6/include/ll/api/data",
+  "outputRoot": "build/_export_srv",
+  "clientOutputRoot": "build/_export_cli",
+  "namespacePrefix": "ll",
+  "allowStringView": false,
   "includeDirs": [
     "C:/Users/xianyu/AppData/Local/.xmake/packages/l/levilamina/26.40.0/e3003356c13f41a6b95d7b7063363cc6/include",
     "C:/Users/xianyu/AppData/Local/.xmake/packages/e/entt/v3.15.0/18a7c66ceb6a4245aa7ca5b637cbf536/include",
@@ -33,18 +32,7 @@
     "C:/Users/xianyu/AppData/Local/.xmake/packages/q/quickjs-ng/v0.15.1/ae851f1d0eb849baa13655dd6c550785/include"
   ],
   "defines": [
-    "LL_PLAT_S",
-    "NOMINMAX",
-    "UNICODE",
-    "_UNICODE",
-    "ENTT_PACKED_PAGE=128",
-    "ENTT_SPARSE_PAGE=2048",
-    "ENTT_NO_MIXIN",
-    "NDEBUG"
-  ],
-  "include": ["^BlockPos$"],
-  "closure": true,
-  "emitIncludes": ["mc/world/level/BlockPos.h"],
-  "knownNativeClasses": [],
-  "allowStringView": false
+    "LL_PLAT_S", "NOMINMAX", "UNICODE", "_UNICODE",
+    "ENTT_PACKED_PAGE=128", "ENTT_SPARSE_PAGE=2048", "ENTT_NO_MIXIN", "NDEBUG"
+  ]
 }
