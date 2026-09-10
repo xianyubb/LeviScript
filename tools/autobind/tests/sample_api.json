@@ -1,0 +1,19 @@
+{
+  "scriptNamespace": "demo",
+  "functionName": "bindGeneratedDemoApi",
+  "std": "c++20",
+  "headers": ["tests/sample_api.h"],
+  "includeDirs": [],
+  "defines": [],
+  "namespaces": ["demo"],
+  "emitIncludes": [],
+  "knownNativeClasses": [],
+  "allowStringView": false,
+  "templateClasses": [
+    { "templateOf": "::demo::Box", "cpp": "::demo::Box<int>", "scriptName": "IntBox" },
+    { "templateOf": "::demo::Box", "cpp": "::demo::Box<float>", "scriptName": "FloatBox" }
+  ],
+  "templateFunctions": [
+    { "scriptName": "identityInt", "cpp": "&::demo::identity<int>" }
+  ]
+}

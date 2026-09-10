@@ -1,0 +1,67 @@
+{
+  "setTimeout": { "type": "function" },
+  "setInterval": { "type": "function" },
+  "clearTimeout": { "type": "function" },
+  "clearInterval": { "type": "function" },
+  "setImmediate": { "type": "function" },
+  "clearImmediate": { "type": "function" },
+  "systemTimeMillis": { "type": "function" },
+  "log": { "type": "function" },
+  "logDebug": { "type": "function" },
+  "colorLog": { "type": "function" },
+
+  "logger": {
+    "type": "object",
+    "members": {
+      "trace": { "type": "function" },
+      "debug": { "type": "function" },
+      "info": { "type": "function" },
+      "warn": { "type": "function" },
+      "error": { "type": "function" },
+      "fatal": { "type": "function" }
+    }
+  },
+
+  "ll": {
+    "type": "object",
+    "members": {
+      "version": { "type": "function" },
+      "listPlugins": { "type": "function" },
+      "isDebugMode": { "type": "function" },
+      "dumpApiSurface": { "type": "function" },
+      "exportFunc": { "type": "function" },
+      "importFunc": { "type": "function" },
+      "require": { "type": "function" }
+    }
+  },
+
+  "console": {
+    "type": "object",
+    "members": {
+      "log": { "type": "function" },
+      "error": { "type": "function" }
+    }
+  },
+
+  "mc": {
+    "type": "object",
+    "members": {
+      "describe": { "type": "function" },
+      "Entity": {
+        "type": "class",
+        "methods": ["getTypeName", "getName", "setName", "getPosition", "setPosition"]
+      },
+      "LivingEntity": {
+        "type": "class",
+        "extends": "Entity",
+        "methods": ["hurt", "isAlive"]
+      },
+      "Player": {
+        "type": "class",
+        "extends": "LivingEntity",
+        "methods": ["sendMessage", "getLastMessage"],
+        "staticMethods": ["create"]
+      }
+    }
+  }
+}

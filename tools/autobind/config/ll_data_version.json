@@ -1,0 +1,50 @@
+{
+  "//": "Real LeviLamina header binding: ll/api/data/Version.h -> script `ll.Version`.",
+  "//note": "Merges into the hand-written `ll` namespace (see autobind.py). LLNDAPI/MCNAPI-marked decls are skipped by parse_headers.py.",
+  "libclangPath": "C:/Program Files/LLVM/bin/libclang.dll",
+  "std": "c++20",
+  "scriptNamespace": "ll",
+  "functionName": "bindGeneratedLlDataApi",
+  "headers": [
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/l/levilamina/26.40.0/e3003356c13f41a6b95d7b7063363cc6/include/ll/api/data/Version.h"
+  ],
+  "includeDirs": [
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/l/levilamina/26.40.0/e3003356c13f41a6b95d7b7063363cc6/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/e/entt/v3.15.0/18a7c66ceb6a4245aa7ca5b637cbf536/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/e/expected-lite/v0.8.0/36ca3aab48a04473a0b2d34e01875b34/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/f/fmt/11.2.0/ee1902dd7cff4195a287949f80dbce70/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/g/gsl/v4.2.0/cdcbe579518f475dbbe3954d5b394a71/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/g/glm/1.0.1/18615f0387cd4e2ab2e9ea9965afc784/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/l/leveldb/1.23/2532d000dc9d47cbb618c80ba0e6d806/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/s/snappy/1.2.2/b3244272357b4994abb43dc0aa939d28/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/m/magic_enum/v0.9.7/03e2990032db4ea08102d17ff8a57da7/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/m/magic_enum/v0.9.7/03e2990032db4ea08102d17ff8a57da7/include/magic_enum",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/n/nlohmann_json/v3.12.0/ab8414047c424750bdc9d7a0ff7afdde/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/r/rapidjson/2025.02.05/5aec2755925a45d9974d95d2cb7038b1/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/t/type_safe/v0.2.4/4b33a9a5c8154bd58b7d4007150f50b7/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/d/debug_assert/v1.3.4/e3515434506a445792c1c83600bcf899/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/p/pcg_cpp/v1.0.0/6c550fbfc1bb49fbbed872829f6090b0/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/p/pfr/2.1.1/45e5102591a649fda279e67eaf92482a/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/p/parallel-hashmap/v1.3.12/47b4dd3f84f34e9d98b4cde1eedee54d/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/c/concurrentqueue/v1.0.4/0cd923cdfb6a4256954a994422b17de9/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/c/concurrentqueue/v1.0.4/0cd923cdfb6a4256954a994422b17de9/include/concurrentqueue/moodycamel",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/s/stb/2025.03.14/5add428b704648039c039d4d74bed865/include",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/s/stb/2025.03.14/5add428b704648039c039d4d74bed865/include/stb",
+    "C:/Users/xianyu/AppData/Local/.xmake/packages/q/quickjs-ng/v0.15.1/ae851f1d0eb849baa13655dd6c550785/include"
+  ],
+  "defines": [
+    "LL_PLAT_S",
+    "NOMINMAX",
+    "UNICODE",
+    "_UNICODE",
+    "ENTT_PACKED_PAGE=128",
+    "ENTT_SPARSE_PAGE=2048",
+    "ENTT_NO_MIXIN",
+    "NDEBUG"
+  ],
+  "namespaces": ["ll::data"],
+  "include": ["^Version$"],
+  "emitIncludes": ["ll/api/data/Version.h"],
+  "knownNativeClasses": [],
+  "allowStringView": false
+}

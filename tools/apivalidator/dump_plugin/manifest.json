@@ -1,0 +1,8 @@
+{
+    "name": "api-dumper",
+    "entry": "index.js",
+    "version": "1.0.0",
+    "type": "lse-quickjs",
+    "author": "LeviScript",
+    "description": "Dev tool plugin: dumps the live API surface to api_surface.json for tools/apivalidator."
+}

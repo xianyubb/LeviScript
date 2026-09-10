@@ -15,11 +15,16 @@ add_requires("levilamina", {configs = {target_type = get_config("target_type")}}
 
 add_requires("levibuildscript")
 
+-- QuickJS (next generation) is used as the JavaScript engine backend.
+-- We deliberately do NOT use ScriptX; the engine abstraction is implemented in-house
+-- directly on top of the QuickJS C API (see src/engine).
+add_requires("quickjs-ng 0.15.x", {configs = {shared = false, libc = false}})
+
 if not has_config("vs_runtime") then
     set_runtimes("MD")
 end
 
-target("my-mod") -- Change this to your mod name.
+target("LeviScript") -- Change this to your mod name.
     add_rules("@levibuildscript/linkrule")
     add_rules("@levibuildscript/modpacker")
     if is_plat("windows") then
@@ -42,6 +47,7 @@ target("my-mod") -- Change this to your mod name.
         set_toolchains("clang-cl")
     end
     add_packages("levilamina")
+    add_packages("quickjs-ng")
     set_kind("shared")
     set_languages("c++20")
     set_symbols("debug")

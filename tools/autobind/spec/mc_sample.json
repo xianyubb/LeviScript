@@ -1,0 +1,64 @@
+{
+  "namespace": "mc",
+  "functionName": "bindGeneratedMcApi",
+  "includes": [],
+  "classes": [
+    {
+      "scriptName": "Entity",
+      "cppType": "::ls::native::mcsample::Entity",
+      "base": null,
+      "constructible": true,
+      "methods": [
+        { "scriptName": "getTypeName", "cpp": "&::ls::native::mcsample::Entity::typeName" },
+        { "scriptName": "getName", "cpp": "&::ls::native::mcsample::Entity::name" },
+        { "scriptName": "setName", "cpp": "&::ls::native::mcsample::Entity::setName" },
+        { "scriptName": "getPosition", "cpp": "&::ls::native::mcsample::Entity::position" },
+        { "scriptName": "setPosition", "cpp": "&::ls::native::mcsample::Entity::setPosition" }
+      ],
+      "properties": [
+        { "scriptName": "id", "get": "&::ls::native::mcsample::Entity::id", "set": "&::ls::native::mcsample::Entity::setId" }
+      ],
+      "staticMethods": []
+    },
+    {
+      "scriptName": "LivingEntity",
+      "cppType": "::ls::native::mcsample::LivingEntity",
+      "base": "Entity",
+      "constructible": true,
+      "methods": [
+        { "scriptName": "hurt", "cpp": "&::ls::native::mcsample::LivingEntity::hurt" },
+        { "scriptName": "isAlive", "cpp": "&::ls::native::mcsample::LivingEntity::isAlive" }
+      ],
+      "properties": [
+        { "scriptName": "health", "get": "&::ls::native::mcsample::LivingEntity::health", "set": "&::ls::native::mcsample::LivingEntity::setHealth" }
+      ],
+      "staticMethods": []
+    },
+    {
+      "scriptName": "Player",
+      "cppType": "::ls::native::mcsample::Player",
+      "base": "LivingEntity",
+      "constructible": true,
+      "methods": [
+        { "scriptName": "sendMessage", "cpp": "&::ls::native::mcsample::Player::sendMessage" },
+        { "scriptName": "getLastMessage", "cpp": "&::ls::native::mcsample::Player::lastMessage" }
+      ],
+      "properties": [
+        { "scriptName": "uuid", "get": "&::ls::native::mcsample::Player::uuid", "set": "&::ls::native::mcsample::Player::setUuid" },
+        { "scriptName": "level", "get": "&::ls::native::mcsample::Player::level", "set": "&::ls::native::mcsample::Player::setLevel" }
+      ],
+      "staticMethods": [
+        {
+          "scriptName": "create",
+          "cpp": "+[](std::string name) -> std::unique_ptr<::ls::native::mcsample::Player> { auto p = std::make_unique<::ls::native::mcsample::Player>(); p->setName(std::move(name)); return p; }"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "scriptName": "describe",
+      "cpp": "+[](::ls::native::mcsample::Entity& entity) -> std::string { return entity.typeName() + \"(name=\" + entity.name() + \")\"; }"
+    }
+  ]
+}

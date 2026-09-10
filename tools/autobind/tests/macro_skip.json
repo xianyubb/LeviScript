@@ -1,0 +1,12 @@
+{
+  "scriptNamespace": "mtest",
+  "functionName": "bindGeneratedMtestApi",
+  "std": "c++20",
+  "headers": ["tests/macro_skip.h"],
+  "includeDirs": [],
+  "defines": [],
+  "namespaces": ["mtest"],
+  "emitIncludes": [],
+  "knownNativeClasses": [],
+  "allowStringView": false
+}

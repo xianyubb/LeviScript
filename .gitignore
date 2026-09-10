@@ -549,3 +549,12 @@ fabric.properties
 # Project specific ignores
 /.idea/
 /bin/
+
+# Python (autobind generator)
+__pycache__/
+*.py[cod]
+
+# Build / generator temp + intermediate artifacts
+/build_log.txt
+tools/autobind/config/*.spec.json
+tools/autobind/config/*.report.json

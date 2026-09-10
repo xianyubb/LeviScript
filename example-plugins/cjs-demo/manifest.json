@@ -1,0 +1,13 @@
+{
+    "name": "cjs-demo",
+    "entry": "index.js",
+    "version": "1.0.0",
+    "type": "lse-quickjs",
+    "author": "LeviScript",
+    "description": "LeviScript demo plugin: classic script entry, CommonJS ll.require, cross-plugin import.",
+    "dependencies": [
+        {
+            "name": "esm-demo"
+        }
+    ]
+}

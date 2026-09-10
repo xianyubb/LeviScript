@@ -1,0 +1,13 @@
+{
+    "name": "esm-demo",
+    "entry": "index.mjs",
+    "version": "1.0.0",
+    "type": "lse-quickjs",
+    "author": "LeviScript",
+    "description": "LeviScript demo plugin: ES module entry, native class inheritance, timers, cross-plugin export.",
+    "dependencies": [
+        {
+            "name":"LeviScript"
+        }
+    ]
+}
