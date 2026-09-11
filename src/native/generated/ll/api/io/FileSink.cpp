@@ -8,11 +8,15 @@
 #include <vector>
 
 #include "ll/api/io/FileSink.h"
+#include "ll/api/io/LogMessage.h"
+#include "ll/api/io/Sink.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::io::FileSink)
+LS_NATIVE_CLASS(::ll::io::LogMessageView)
+LS_NATIVE_CLASS(::ll::io::Sink)
 
 namespace ls::native::generated {
 
@@ -36,8 +40,9 @@ void bind_ll_api_io_FileSink(ScriptEngine& engine) {
     Local<Value>  probe1 = ns0.getProperty("io");
     Local<Object> ns = probe1.isObject() ? Local<Object>(probe1) : makeObject(engine);
 
-    // -- FileSink --------------------
-    ClassBinder::registerClass<::ll::io::FileSink>(engine, "FileSink");
+    // -- FileSink : Sink --------------------
+    ClassBinder::registerClass<::ll::io::FileSink, ::ll::io::Sink>(engine, "FileSink");
+    ClassBinder::method<::ll::io::FileSink>(engine, "append", &::ll::io::FileSink::append);
     ClassBinder::method<::ll::io::FileSink>(engine, "flush", &::ll::io::FileSink::flush);
     ClassBinder::method<::ll::io::FileSink>(engine, "setFlushLevel", &::ll::io::FileSink::setFlushLevel);
     ClassBinder::expose<::ll::io::FileSink>(engine, ns.handle(), "FileSink");

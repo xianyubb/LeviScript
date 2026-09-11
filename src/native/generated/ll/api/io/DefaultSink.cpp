@@ -8,11 +8,15 @@
 #include <vector>
 
 #include "ll/api/io/DefaultSink.h"
+#include "ll/api/io/LogMessage.h"
+#include "ll/api/io/Sink.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::io::DefaultSink)
+LS_NATIVE_CLASS(::ll::io::LogMessageView)
+LS_NATIVE_CLASS(::ll::io::Sink)
 
 namespace ls::native::generated {
 
@@ -36,9 +40,10 @@ void bind_ll_api_io_DefaultSink(ScriptEngine& engine) {
     Local<Value>  probe1 = ns0.getProperty("io");
     Local<Object> ns = probe1.isObject() ? Local<Object>(probe1) : makeObject(engine);
 
-    // -- DefaultSink --------------------
-    ClassBinder::registerClass<::ll::io::DefaultSink>(engine, "DefaultSink");
+    // -- DefaultSink : Sink --------------------
+    ClassBinder::registerClass<::ll::io::DefaultSink, ::ll::io::Sink>(engine, "DefaultSink");
     ClassBinder::method<::ll::io::DefaultSink>(engine, "flush", &::ll::io::DefaultSink::flush);
+    ClassBinder::method<::ll::io::DefaultSink>(engine, "append", &::ll::io::DefaultSink::append);
     ClassBinder::constructor<::ll::io::DefaultSink>(engine, +[]() -> ::ll::io::DefaultSink* { return new ::ll::io::DefaultSink(); });
     ClassBinder::expose<::ll::io::DefaultSink>(engine, ns.handle(), "DefaultSink");
 

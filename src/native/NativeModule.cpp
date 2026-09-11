@@ -24,6 +24,7 @@ void bindApis(ScriptEngine& engine) {
     bindSystemApi(engine);
     bindLlApi(engine);
     bindMcApi(engine);
+    generated::bindAllGeneratedLl(engine); // full ll/api tree (+ referenced mc types), base-first
 }
 
 namespace {

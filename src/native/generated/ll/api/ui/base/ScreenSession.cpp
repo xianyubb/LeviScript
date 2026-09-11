@@ -8,12 +8,16 @@
 #include <vector>
 
 #include "ll/api/ui/base/ScreenSession.h"
+#include "ll/api/Expected.h"
+#include "ll/api/coro/CoroTask.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::ui::NoInstanceIdTag)
 LS_NATIVE_CLASS(::ll::ui::ScreenSession)
+LS_NATIVE_CLASS(::ll::Error)
+LS_NATIVE_CLASS(::ll::coro::CoroTask<nonstd::expected_lite::expected<DataDrivenScreenClosedReason, ll::Error>>)
 
 namespace ls::native::generated {
 
@@ -41,6 +45,7 @@ void bind_ll_api_ui_base_ScreenSession(ScriptEngine& engine) {
 
     // -- NoInstanceIdTag --------------------
     ClassBinder::registerClass<::ll::ui::NoInstanceIdTag>(engine, "NoInstanceIdTag");
+    ClassBinder::constructor<::ll::ui::NoInstanceIdTag>(engine, +[]() -> ::ll::ui::NoInstanceIdTag* { return new ::ll::ui::NoInstanceIdTag(); });
     ClassBinder::expose<::ll::ui::NoInstanceIdTag>(engine, ns.handle(), "NoInstanceIdTag");
 
     // -- ScreenSession --------------------
@@ -48,6 +53,7 @@ void bind_ll_api_ui_base_ScreenSession(ScriptEngine& engine) {
     ClassBinder::method<::ll::ui::ScreenSession>(engine, "getState", &::ll::ui::ScreenSession::getState);
     ClassBinder::method<::ll::ui::ScreenSession>(engine, "getInstanceId", &::ll::ui::ScreenSession::getInstanceId);
     ClassBinder::method<::ll::ui::ScreenSession>(engine, "getFormId", &::ll::ui::ScreenSession::getFormId);
+    ClassBinder::method<::ll::ui::ScreenSession>(engine, "showAsync", &::ll::ui::ScreenSession::showAsync);
     ClassBinder::constructor<::ll::ui::ScreenSession>(engine, +[]() -> ::ll::ui::ScreenSession* { return new ::ll::ui::ScreenSession(); });
     ClassBinder::expose<::ll::ui::ScreenSession>(engine, ns.handle(), "ScreenSession");
 

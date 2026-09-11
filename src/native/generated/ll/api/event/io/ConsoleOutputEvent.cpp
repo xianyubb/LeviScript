@@ -8,12 +8,18 @@
 #include <vector>
 
 #include "ll/api/event/io/ConsoleOutputEvent.h"
+#include "ll/api/event/Cancellable.h"
+#include "mc/deps/nbt/CompoundTag.h"
+#include "ll/api/event/Event.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
+LS_NATIVE_CLASS(::ll::event::Cancellable<ll::event::Event>)
 LS_NATIVE_CLASS(::ll::event::io::ConsoleOutputtingEvent)
 LS_NATIVE_CLASS(::ll::event::io::ConsoleOutputtedEvent)
+LS_NATIVE_CLASS(::CompoundTag)
+LS_NATIVE_CLASS(::ll::event::Event)
 
 namespace ls::native::generated {
 
@@ -39,15 +45,27 @@ void bind_ll_api_event_io_ConsoleOutputEvent(ScriptEngine& engine) {
     Local<Value>  probe2 = ns1.getProperty("io");
     Local<Object> ns = probe2.isObject() ? Local<Object>(probe2) : makeObject(engine);
 
-    // -- ConsoleOutputtingEvent --------------------
-    ClassBinder::registerClass<::ll::event::io::ConsoleOutputtingEvent>(engine, "ConsoleOutputtingEvent");
-    ClassBinder::method<::ll::event::io::ConsoleOutputtingEvent>(engine, "message", &::ll::event::io::ConsoleOutputtingEvent::message);
+    // -- CancellableEvent : Event --------------------
+    ClassBinder::registerClass<::ll::event::Cancellable<ll::event::Event>, ::ll::event::Event>(engine, "CancellableEvent");
+    ClassBinder::method<::ll::event::Cancellable<ll::event::Event>>(engine, "serialize", &::ll::event::Cancellable<ll::event::Event>::serialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::Event>>(engine, "deserialize", &::ll::event::Cancellable<ll::event::Event>::deserialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::Event>>(engine, "isCancelled", &::ll::event::Cancellable<ll::event::Event>::isCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::Event>>(engine, "setCancelled", &::ll::event::Cancellable<ll::event::Event>::setCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::Event>>(engine, "cancel", &::ll::event::Cancellable<ll::event::Event>::cancel);
+    ClassBinder::expose<::ll::event::Cancellable<ll::event::Event>>(engine, ns.handle(), "CancellableEvent");
+
+    // -- ConsoleOutputtingEvent : CancellableEvent --------------------
+    ClassBinder::registerClass<::ll::event::io::ConsoleOutputtingEvent, ::ll::event::Cancellable<ll::event::Event>>(engine, "ConsoleOutputtingEvent");
+    ClassBinder::method<::ll::event::io::ConsoleOutputtingEvent>(engine, "serialize", &::ll::event::io::ConsoleOutputtingEvent::serialize);
+    ClassBinder::method<::ll::event::io::ConsoleOutputtingEvent>(engine, "deserialize", &::ll::event::io::ConsoleOutputtingEvent::deserialize);
     ClassBinder::expose<::ll::event::io::ConsoleOutputtingEvent>(engine, ns.handle(), "ConsoleOutputtingEvent");
 
-    // -- ConsoleOutputtedEvent --------------------
-    ClassBinder::registerClass<::ll::event::io::ConsoleOutputtedEvent>(engine, "ConsoleOutputtedEvent");
+    // -- ConsoleOutputtedEvent : Event --------------------
+    ClassBinder::registerClass<::ll::event::io::ConsoleOutputtedEvent, ::ll::event::Event>(engine, "ConsoleOutputtedEvent");
+    ClassBinder::method<::ll::event::io::ConsoleOutputtedEvent>(engine, "serialize", &::ll::event::io::ConsoleOutputtedEvent::serialize);
     ClassBinder::method<::ll::event::io::ConsoleOutputtedEvent>(engine, "message", &::ll::event::io::ConsoleOutputtedEvent::message);
     ClassBinder::method<::ll::event::io::ConsoleOutputtedEvent>(engine, "isCancelled", &::ll::event::io::ConsoleOutputtedEvent::isCancelled);
+    ClassBinder::constructor<::ll::event::io::ConsoleOutputtedEvent>(engine, +[](const std::basic_string<char> & a0, bool a1) -> ::ll::event::io::ConsoleOutputtedEvent* { return new ::ll::event::io::ConsoleOutputtedEvent(std::move(a0), std::move(a1)); });
     ClassBinder::expose<::ll::event::io::ConsoleOutputtedEvent>(engine, ns.handle(), "ConsoleOutputtedEvent");
 
     ns1.setProperty("io", ns);

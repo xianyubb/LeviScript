@@ -8,12 +8,21 @@
 #include <vector>
 
 #include "ll/api/event/player/PlayerPlaceBlockEvent.h"
+#include "ll/api/event/Cancellable.h"
+#include "mc/world/level/BlockPos.h"
+#include "mc/deps/nbt/CompoundTag.h"
+#include "ll/api/event/player/PlayerClickEvent.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::event::player::PlayerPlaceBlockEvent)
+LS_NATIVE_CLASS(::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>)
 LS_NATIVE_CLASS(::ll::event::player::PlayerPlacingBlockEvent)
+LS_NATIVE_CLASS(::ll::event::player::PlayerPlacedBlockEvent)
+LS_NATIVE_CLASS(::BlockPos)
+LS_NATIVE_CLASS(::CompoundTag)
+LS_NATIVE_CLASS(::ll::event::PlayerRightClickEvent)
 
 namespace ls::native::generated {
 
@@ -39,14 +48,31 @@ void bind_ll_api_event_player_PlayerPlaceBlockEvent(ScriptEngine& engine) {
     Local<Value>  probe2 = ns1.getProperty("player");
     Local<Object> ns = probe2.isObject() ? Local<Object>(probe2) : makeObject(engine);
 
-    // -- PlayerPlaceBlockEvent --------------------
-    ClassBinder::registerClass<::ll::event::player::PlayerPlaceBlockEvent>(engine, "PlayerPlaceBlockEvent");
+    // -- PlayerPlaceBlockEvent : PlayerRightClickEvent --------------------
+    ClassBinder::registerClass<::ll::event::player::PlayerPlaceBlockEvent, ::ll::event::PlayerRightClickEvent>(engine, "PlayerPlaceBlockEvent");
+    ClassBinder::method<::ll::event::player::PlayerPlaceBlockEvent>(engine, "serialize", &::ll::event::player::PlayerPlaceBlockEvent::serialize);
+    ClassBinder::method<::ll::event::player::PlayerPlaceBlockEvent>(engine, "pos", &::ll::event::player::PlayerPlaceBlockEvent::pos);
     ClassBinder::expose<::ll::event::player::PlayerPlaceBlockEvent>(engine, ns.handle(), "PlayerPlaceBlockEvent");
 
-    // -- PlayerPlacingBlockEvent --------------------
-    ClassBinder::registerClass<::ll::event::player::PlayerPlacingBlockEvent>(engine, "PlayerPlacingBlockEvent");
+    // -- CancellablePlayerPlaceBlockEvent --------------------
+    ClassBinder::registerClass<::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>>(engine, "CancellablePlayerPlaceBlockEvent");
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>>(engine, "serialize", &::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>::serialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>>(engine, "deserialize", &::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>::deserialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>>(engine, "isCancelled", &::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>::isCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>>(engine, "setCancelled", &::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>::setCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>>(engine, "cancel", &::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>::cancel);
+    ClassBinder::expose<::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>>(engine, ns.handle(), "CancellablePlayerPlaceBlockEvent");
+
+    // -- PlayerPlacingBlockEvent : CancellablePlayerPlaceBlockEvent --------------------
+    ClassBinder::registerClass<::ll::event::player::PlayerPlacingBlockEvent, ::ll::event::Cancellable<ll::event::PlayerPlaceBlockEvent>>(engine, "PlayerPlacingBlockEvent");
+    ClassBinder::method<::ll::event::player::PlayerPlacingBlockEvent>(engine, "serialize", &::ll::event::player::PlayerPlacingBlockEvent::serialize);
     ClassBinder::method<::ll::event::player::PlayerPlacingBlockEvent>(engine, "face", &::ll::event::player::PlayerPlacingBlockEvent::face);
     ClassBinder::expose<::ll::event::player::PlayerPlacingBlockEvent>(engine, ns.handle(), "PlayerPlacingBlockEvent");
+
+    // -- PlayerPlacedBlockEvent : PlayerPlaceBlockEvent --------------------
+    ClassBinder::registerClass<::ll::event::player::PlayerPlacedBlockEvent, ::ll::event::player::PlayerPlaceBlockEvent>(engine, "PlayerPlacedBlockEvent");
+    ClassBinder::method<::ll::event::player::PlayerPlacedBlockEvent>(engine, "serialize", &::ll::event::player::PlayerPlacedBlockEvent::serialize);
+    ClassBinder::expose<::ll::event::player::PlayerPlacedBlockEvent>(engine, ns.handle(), "PlayerPlacedBlockEvent");
 
     ns1.setProperty("player", ns);
     ns0.setProperty("event", ns1);

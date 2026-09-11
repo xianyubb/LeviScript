@@ -1,12 +1,13 @@
 {
-  "//": "Full ll/api export: only LLAPI/LLNDAPI/MCAPI-marked functions (server) and LLCAPI (client).",
-  "//layout": "Mirrors the LL tree: ll/api/io/Logger.h -> src/native/generated/ll/api/io/Logger.cpp (client -> src-client/generated/...).",
+  "//": "Full ll/api export: EVERY function/method except MCNAPI (allExceptSkip policy).",
+  "//layout": "Mirrors the source tree: ll/api/io/Logger.h -> src/native/generated/ll/api/io/Logger.cpp; referenced MC types -> src/native/generated/mc/....cpp (opaque).",
   "libclangPath": "C:/Program Files/LLVM/bin/libclang.dll",
   "std": "c++20",
   "headerRoot": "C:/Users/xianyu/AppData/Local/.xmake/packages/l/levilamina/26.40.0/e3003356c13f41a6b95d7b7063363cc6/include/ll/api",
   "outputRoot": "src/native/generated",
-  "clientOutputRoot": "src-client/generated",
+  "clientOutputRoot": null,
   "namespacePrefix": "ll",
+  "closureRoots": ["ll", "mc"],
   "allowStringView": true,
   "includeDirs": [
     "C:/Users/xianyu/AppData/Local/.xmake/packages/l/levilamina/26.40.0/e3003356c13f41a6b95d7b7063363cc6/include",

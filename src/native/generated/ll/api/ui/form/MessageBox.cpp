@@ -8,12 +8,16 @@
 #include <vector>
 
 #include "ll/api/ui/form/MessageBox.h"
+#include "ll/api/Expected.h"
+#include "ll/api/coro/CoroTask.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::ui::MessageBoxResult)
 LS_NATIVE_CLASS(::ll::ui::MessageBox)
+LS_NATIVE_CLASS(::ll::Error)
+LS_NATIVE_CLASS(::ll::coro::CoroTask<nonstd::expected_lite::expected<ll::ui::MessageBoxResult, ll::Error>>)
 
 namespace ls::native::generated {
 
@@ -45,6 +49,7 @@ void bind_ll_api_ui_form_MessageBox(ScriptEngine& engine) {
 
     // -- MessageBox --------------------
     ClassBinder::registerClass<::ll::ui::MessageBox>(engine, "MessageBox");
+    ClassBinder::method<::ll::ui::MessageBox>(engine, "showAsync", &::ll::ui::MessageBox::showAsync);
     ClassBinder::method<::ll::ui::MessageBox>(engine, "isShowing", &::ll::ui::MessageBox::isShowing);
     ClassBinder::expose<::ll::ui::MessageBox>(engine, ns.handle(), "MessageBox");
 

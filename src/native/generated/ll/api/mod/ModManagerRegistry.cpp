@@ -8,11 +8,15 @@
 #include <vector>
 
 #include "ll/api/mod/ModManagerRegistry.h"
+#include "ll/api/mod/Mod.h"
+#include "ll/api/mod/ModManager.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::mod::ModManagerRegistry)
+LS_NATIVE_CLASS(::ll::mod::Mod)
+LS_NATIVE_CLASS(::ll::mod::ModManager)
 
 namespace ls::native::generated {
 
@@ -40,8 +44,11 @@ void bind_ll_api_mod_ModManagerRegistry(ScriptEngine& engine) {
     ClassBinder::registerClass<::ll::mod::ModManagerRegistry>(engine, "ModManagerRegistry");
     ClassBinder::method<::ll::mod::ModManagerRegistry>(engine, "eraseManager", &::ll::mod::ModManagerRegistry::eraseManager);
     ClassBinder::method<::ll::mod::ModManagerRegistry>(engine, "hasManager", &::ll::mod::ModManagerRegistry::hasManager);
+    ClassBinder::method<::ll::mod::ModManagerRegistry>(engine, "getManager", &::ll::mod::ModManagerRegistry::getManager);
+    ClassBinder::method<::ll::mod::ModManagerRegistry>(engine, "getManagerForMod", &::ll::mod::ModManagerRegistry::getManagerForMod);
     ClassBinder::method<::ll::mod::ModManagerRegistry>(engine, "hasMod", &::ll::mod::ModManagerRegistry::hasMod);
     ClassBinder::method<::ll::mod::ModManagerRegistry>(engine, "getModType", &::ll::mod::ModManagerRegistry::getModType);
+    ClassBinder::method<::ll::mod::ModManagerRegistry>(engine, "getMod", &::ll::mod::ModManagerRegistry::getMod);
     ClassBinder::method<::ll::mod::ModManagerRegistry>(engine, "eraseOnModCallback", static_cast<bool (::ll::mod::ModManagerRegistry::*)(unsigned long long)>(&::ll::mod::ModManagerRegistry::eraseOnModCallback));
     ClassBinder::staticMethod<::ll::mod::ModManagerRegistry>(engine, "getInstance", &::ll::mod::ModManagerRegistry::getInstance);
     ClassBinder::expose<::ll::mod::ModManagerRegistry>(engine, ns.handle(), "ModManagerRegistry");

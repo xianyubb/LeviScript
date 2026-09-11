@@ -8,10 +8,12 @@
 #include <vector>
 
 #include "ll/api/io/FileUtils.h"
+#include "ll/api/data/Version.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
+LS_NATIVE_CLASS(::ll::data::Version)
 
 namespace ls::native::generated {
 
@@ -39,6 +41,7 @@ void bind_ll_api_io_FileUtils(ScriptEngine& engine) {
     ns.setProperty("u8path", makeFunction(engine, makeNativeFunction(static_cast<std::filesystem::path (*)(std::basic_string_view<char>)>(&::ll::utils::file_utils::u8path))));
     ns.setProperty("readFile", makeFunction(engine, makeNativeFunction(static_cast<std::optional<std::basic_string<char>> (*)(const std::filesystem::path &, bool)>(&::ll::utils::file_utils::readFile))));
     ns.setProperty("writeFile", makeFunction(engine, makeNativeFunction(static_cast<bool (*)(const std::filesystem::path &, std::basic_string_view<char>, bool)>(&::ll::utils::file_utils::writeFile))));
+    ns.setProperty("getVersion", makeFunction(engine, makeNativeFunction(static_cast<std::optional<ll::data::Version> (*)(const std::filesystem::path &)>(&::ll::utils::file_utils::getVersion))));
 
     ns0.setProperty("io", ns);
     global.setProperty("ll", ns0);

@@ -8,11 +8,25 @@
 #include <vector>
 
 #include "ll/api/event/player/PlayerInteractBlockEvent.h"
+#include "ll/api/event/Cancellable.h"
+#include "mc/world/level/BlockPos.h"
+#include "mc/deps/nbt/CompoundTag.h"
+#include "mc/world/item/ItemStack.h"
+#include "mc/deps/core/math/Vec3.h"
+#include "mc/deps/core/utility/optional_ref.h"
+#include "ll/api/event/player/PlayerClickEvent.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
+LS_NATIVE_CLASS(::ll::event::Cancellable<ll::event::PlayerRightClickEvent>)
 LS_NATIVE_CLASS(::ll::event::player::PlayerInteractBlockEvent)
+LS_NATIVE_CLASS(::BlockPos)
+LS_NATIVE_CLASS(::CompoundTag)
+LS_NATIVE_CLASS(::ItemStack)
+LS_NATIVE_CLASS(::Vec3)
+LS_NATIVE_CLASS(::optional_ref<const Block>)
+LS_NATIVE_CLASS(::ll::event::PlayerRightClickEvent)
 
 namespace ls::native::generated {
 
@@ -38,9 +52,23 @@ void bind_ll_api_event_player_PlayerInteractBlockEvent(ScriptEngine& engine) {
     Local<Value>  probe2 = ns1.getProperty("player");
     Local<Object> ns = probe2.isObject() ? Local<Object>(probe2) : makeObject(engine);
 
-    // -- PlayerInteractBlockEvent --------------------
-    ClassBinder::registerClass<::ll::event::player::PlayerInteractBlockEvent>(engine, "PlayerInteractBlockEvent");
+    // -- CancellablePlayerRightClickEvent : PlayerRightClickEvent --------------------
+    ClassBinder::registerClass<::ll::event::Cancellable<ll::event::PlayerRightClickEvent>, ::ll::event::PlayerRightClickEvent>(engine, "CancellablePlayerRightClickEvent");
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerRightClickEvent>>(engine, "serialize", &::ll::event::Cancellable<ll::event::PlayerRightClickEvent>::serialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerRightClickEvent>>(engine, "deserialize", &::ll::event::Cancellable<ll::event::PlayerRightClickEvent>::deserialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerRightClickEvent>>(engine, "isCancelled", &::ll::event::Cancellable<ll::event::PlayerRightClickEvent>::isCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerRightClickEvent>>(engine, "setCancelled", &::ll::event::Cancellable<ll::event::PlayerRightClickEvent>::setCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerRightClickEvent>>(engine, "cancel", &::ll::event::Cancellable<ll::event::PlayerRightClickEvent>::cancel);
+    ClassBinder::expose<::ll::event::Cancellable<ll::event::PlayerRightClickEvent>>(engine, ns.handle(), "CancellablePlayerRightClickEvent");
+
+    // -- PlayerInteractBlockEvent : CancellablePlayerRightClickEvent --------------------
+    ClassBinder::registerClass<::ll::event::player::PlayerInteractBlockEvent, ::ll::event::Cancellable<ll::event::PlayerRightClickEvent>>(engine, "PlayerInteractBlockEvent");
+    ClassBinder::method<::ll::event::player::PlayerInteractBlockEvent>(engine, "serialize", &::ll::event::player::PlayerInteractBlockEvent::serialize);
+    ClassBinder::method<::ll::event::player::PlayerInteractBlockEvent>(engine, "item", &::ll::event::player::PlayerInteractBlockEvent::item);
+    ClassBinder::method<::ll::event::player::PlayerInteractBlockEvent>(engine, "blockPos", &::ll::event::player::PlayerInteractBlockEvent::blockPos);
     ClassBinder::method<::ll::event::player::PlayerInteractBlockEvent>(engine, "face", &::ll::event::player::PlayerInteractBlockEvent::face);
+    ClassBinder::method<::ll::event::player::PlayerInteractBlockEvent>(engine, "clickPos", &::ll::event::player::PlayerInteractBlockEvent::clickPos);
+    ClassBinder::method<::ll::event::player::PlayerInteractBlockEvent>(engine, "block", &::ll::event::player::PlayerInteractBlockEvent::block);
     ClassBinder::expose<::ll::event::player::PlayerInteractBlockEvent>(engine, ns.handle(), "PlayerInteractBlockEvent");
 
     ns1.setProperty("player", ns);

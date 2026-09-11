@@ -37,6 +37,7 @@ void bind_ll_api_memory_Hook(ScriptEngine& engine) {
 
     // -- free functions --------------------
     ns.setProperty("shouldHookSuspendThreads", makeFunction(engine, makeNativeFunction(static_cast<bool (*)()>(&::ll::memory::shouldHookSuspendThreads))));
+    ns.setProperty("hook", makeFunction(engine, makeNativeFunction(static_cast<int (*)(void *, void *, void **, ll::memory::HookPriority, bool)>(&::ll::memory::hook))));
     ns.setProperty("hookEx", makeFunction(engine, makeNativeFunction(static_cast<int (*)(void *, void *, void **, ll::memory::HookPriority, ll::memory::RegisterSaveOptions, bool)>(&::ll::memory::hookEx))));
     ns.setProperty("unhook", makeFunction(engine, makeNativeFunction(static_cast<bool (*)(void *, void *, bool)>(&::ll::memory::unhook))));
     ns.setProperty("hookOptions", makeFunction(engine, makeNativeFunction(static_cast<bool (*)(void *, ll::memory::RegisterSaveOptions, bool, bool)>(&::ll::memory::hookOptions))));

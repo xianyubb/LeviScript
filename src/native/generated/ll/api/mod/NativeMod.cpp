@@ -8,11 +8,13 @@
 #include <vector>
 
 #include "ll/api/mod/NativeMod.h"
+#include "ll/api/mod/Mod.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::mod::NativeMod)
+LS_NATIVE_CLASS(::ll::mod::Mod)
 
 namespace ls::native::generated {
 
@@ -36,8 +38,8 @@ void bind_ll_api_mod_NativeMod(ScriptEngine& engine) {
     Local<Value>  probe1 = ns0.getProperty("mod");
     Local<Object> ns = probe1.isObject() ? Local<Object>(probe1) : makeObject(engine);
 
-    // -- NativeMod --------------------
-    ClassBinder::registerClass<::ll::mod::NativeMod>(engine, "NativeMod");
+    // -- NativeMod : Mod --------------------
+    ClassBinder::registerClass<::ll::mod::NativeMod, ::ll::mod::Mod>(engine, "NativeMod");
     ClassBinder::method<::ll::mod::NativeMod>(engine, "getHandle", &::ll::mod::NativeMod::getHandle);
     ClassBinder::staticMethod<::ll::mod::NativeMod>(engine, "getByHandle", &::ll::mod::NativeMod::getByHandle);
     ClassBinder::staticMethod<::ll::mod::NativeMod>(engine, "current", &::ll::mod::NativeMod::current);

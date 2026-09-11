@@ -8,12 +8,14 @@
 #include <vector>
 
 #include "ll/api/service/PlayerInfo.h"
+#include "mc/deps/core/utility/optional_ref.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::service::PlayerInfo)
 LS_NATIVE_CLASS(::ll::service::PlayerInfo::PlayerInfoEntry)
+LS_NATIVE_CLASS(::optional_ref<const ll::service::PlayerInfo::PlayerInfoEntry>)
 
 namespace ls::native::generated {
 
@@ -39,6 +41,8 @@ void bind_ll_api_service_PlayerInfo(ScriptEngine& engine) {
 
     // -- PlayerInfo --------------------
     ClassBinder::registerClass<::ll::service::PlayerInfo>(engine, "PlayerInfo");
+    ClassBinder::method<::ll::service::PlayerInfo>(engine, "fromXuid", &::ll::service::PlayerInfo::fromXuid);
+    ClassBinder::method<::ll::service::PlayerInfo>(engine, "fromName", &::ll::service::PlayerInfo::fromName);
     ClassBinder::staticMethod<::ll::service::PlayerInfo>(engine, "getInstance", &::ll::service::PlayerInfo::getInstance);
     ClassBinder::expose<::ll::service::PlayerInfo>(engine, ns.handle(), "PlayerInfo");
 

@@ -8,11 +8,13 @@
 #include <vector>
 
 #include "ll/api/form/ModalForm.h"
+#include "ll/api/form/FormBase.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::form::ModalForm)
+LS_NATIVE_CLASS(::ll::form::Form)
 
 namespace ls::native::generated {
 
@@ -36,8 +38,8 @@ void bind_ll_api_form_ModalForm(ScriptEngine& engine) {
     Local<Value>  probe1 = ns0.getProperty("form");
     Local<Object> ns = probe1.isObject() ? Local<Object>(probe1) : makeObject(engine);
 
-    // -- ModalForm --------------------
-    ClassBinder::registerClass<::ll::form::ModalForm>(engine, "ModalForm");
+    // -- ModalForm : Form --------------------
+    ClassBinder::registerClass<::ll::form::ModalForm, ::ll::form::Form>(engine, "ModalForm");
     ClassBinder::method<::ll::form::ModalForm>(engine, "setTitle", &::ll::form::ModalForm::setTitle);
     ClassBinder::method<::ll::form::ModalForm>(engine, "setContent", &::ll::form::ModalForm::setContent);
     ClassBinder::method<::ll::form::ModalForm>(engine, "setUpperButton", &::ll::form::ModalForm::setUpperButton);

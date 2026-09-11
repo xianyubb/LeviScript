@@ -36,6 +36,10 @@ void bind_ll_api_utils_StringUtils(ScriptEngine& engine) {
     Local<Object> ns = probe1.isObject() ? Local<Object>(probe1) : makeObject(engine);
 
     // -- free functions --------------------
+    ns.setProperty("replaceAll", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string<char> (*)(const std::basic_string<char> &, std::basic_string_view<char>, std::basic_string_view<char>)>(&::ll::utils::string_utils::replaceAll))));
+    ns.setProperty("digitFromChar", makeFunction(engine, makeNativeFunction(static_cast<unsigned char (*)(char) noexcept>(&::ll::utils::string_utils::digitFromChar))));
+    ns.setProperty("charFromInt", makeFunction(engine, makeNativeFunction(static_cast<char (*)(bool, unsigned char)>(&::ll::utils::string_utils::charFromInt))));
+    ns.setProperty("strToHexStr", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string<char> (*)(std::basic_string_view<char>, bool, bool)>(&::ll::utils::string_utils::strToHexStr))));
     ns.setProperty("removeEscapeCode", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string<char> (*)(std::basic_string_view<char>)>(&::ll::utils::string_utils::removeEscapeCode))));
     ns.setProperty("replaceAnsiToMcCode", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string<char> (*)(std::basic_string_view<char>)>(&::ll::utils::string_utils::replaceAnsiToMcCode))));
     ns.setProperty("replaceMcToAnsiCode", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string<char> (*)(std::basic_string_view<char>)>(&::ll::utils::string_utils::replaceMcToAnsiCode))));
@@ -43,6 +47,7 @@ void bind_ll_api_utils_StringUtils(ScriptEngine& engine) {
     ns.setProperty("tou8str", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string<char> (*)(std::basic_string_view<char>)>(&::ll::utils::string_utils::tou8str))));
     ns.setProperty("toSnakeCase", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string<char> (*)(std::basic_string_view<char>)>(&::ll::utils::string_utils::toSnakeCase))));
     ns.setProperty("toLowerCase", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string<char> (*)(std::basic_string_view<char>)>(&::ll::utils::string_utils::toLowerCase))));
+    ns.setProperty("str2str", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string<char> (*)(std::basic_string_view<char>, unsigned int, unsigned int)>(&::ll::utils::string_utils::str2str))));
 
     ns0.setProperty("utils", ns);
     global.setProperty("ll", ns0);

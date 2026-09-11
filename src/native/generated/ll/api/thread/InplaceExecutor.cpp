@@ -8,11 +8,13 @@
 #include <vector>
 
 #include "ll/api/thread/InplaceExecutor.h"
+#include "ll/api/coro/Executor.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::thread::InplaceExecutor)
+LS_NATIVE_CLASS(::ll::coro::Executor)
 
 namespace ls::native::generated {
 
@@ -36,8 +38,8 @@ void bind_ll_api_thread_InplaceExecutor(ScriptEngine& engine) {
     Local<Value>  probe1 = ns0.getProperty("thread");
     Local<Object> ns = probe1.isObject() ? Local<Object>(probe1) : makeObject(engine);
 
-    // -- InplaceExecutor --------------------
-    ClassBinder::registerClass<::ll::thread::InplaceExecutor>(engine, "InplaceExecutor");
+    // -- InplaceExecutor : Executor --------------------
+    ClassBinder::registerClass<::ll::thread::InplaceExecutor, ::ll::coro::Executor>(engine, "InplaceExecutor");
     ClassBinder::staticMethod<::ll::thread::InplaceExecutor>(engine, "getDefault", &::ll::thread::InplaceExecutor::getDefault);
     ClassBinder::constructor<::ll::thread::InplaceExecutor>(engine, +[](std::basic_string<char> a0) -> ::ll::thread::InplaceExecutor* { return new ::ll::thread::InplaceExecutor(std::move(a0)); });
     ClassBinder::expose<::ll::thread::InplaceExecutor>(engine, ns.handle(), "InplaceExecutor");

@@ -12,9 +12,7 @@
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
-LS_NATIVE_CLASS(::ll::memory::SignatureElement)
-LS_NATIVE_CLASS(::ll::memory::SignatureView)
-LS_NATIVE_CLASS(::ll::memory::Signature)
+LS_NATIVE_CLASS(::CommandRegistry::Signature)
 
 namespace ls::native::generated {
 
@@ -38,19 +36,9 @@ void bind_ll_api_memory_Signature(ScriptEngine& engine) {
     Local<Value>  probe1 = ns0.getProperty("memory");
     Local<Object> ns = probe1.isObject() ? Local<Object>(probe1) : makeObject(engine);
 
-    // -- SignatureElement --------------------
-    ClassBinder::registerClass<::ll::memory::SignatureElement>(engine, "SignatureElement");
-    ClassBinder::expose<::ll::memory::SignatureElement>(engine, ns.handle(), "SignatureElement");
-
-    // -- SignatureView --------------------
-    ClassBinder::registerClass<::ll::memory::SignatureView>(engine, "SignatureView");
-    ClassBinder::method<::ll::memory::SignatureView>(engine, "resolve", static_cast<void * (::ll::memory::SignatureView::*)(bool) const>(&::ll::memory::SignatureView::resolve));
-    ClassBinder::method<::ll::memory::SignatureView>(engine, "toString", &::ll::memory::SignatureView::toString);
-    ClassBinder::expose<::ll::memory::SignatureView>(engine, ns.handle(), "SignatureView");
-
     // -- Signature --------------------
-    ClassBinder::registerClass<::ll::memory::Signature>(engine, "Signature");
-    ClassBinder::expose<::ll::memory::Signature>(engine, ns.handle(), "Signature");
+    ClassBinder::registerClass<::CommandRegistry::Signature>(engine, "Signature");
+    ClassBinder::expose<::CommandRegistry::Signature>(engine, ns.handle(), "Signature");
 
     ns0.setProperty("memory", ns);
     global.setProperty("ll", ns0);

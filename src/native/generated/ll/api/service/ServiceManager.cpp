@@ -8,6 +8,9 @@
 #include <vector>
 
 #include "ll/api/service/ServiceManager.h"
+#include "ll/api/Expected.h"
+#include "ll/api/mod/Mod.h"
+#include "ll/api/service/ServiceId.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
@@ -15,6 +18,9 @@
 LS_NATIVE_CLASS(::ll::service::GetServiceError)
 LS_NATIVE_CLASS(::ll::service::QueryServiceResult)
 LS_NATIVE_CLASS(::ll::service::ServiceManager)
+LS_NATIVE_CLASS(::ll::ErrorInfoBase)
+LS_NATIVE_CLASS(::ll::mod::Mod)
+LS_NATIVE_CLASS(::ll::service::ServiceIdView)
 
 namespace ls::native::generated {
 
@@ -38,8 +44,8 @@ void bind_ll_api_service_ServiceManager(ScriptEngine& engine) {
     Local<Value>  probe1 = ns0.getProperty("service");
     Local<Object> ns = probe1.isObject() ? Local<Object>(probe1) : makeObject(engine);
 
-    // -- GetServiceError --------------------
-    ClassBinder::registerClass<::ll::service::GetServiceError>(engine, "GetServiceError");
+    // -- GetServiceError : ErrorInfoBase --------------------
+    ClassBinder::registerClass<::ll::service::GetServiceError, ::ll::ErrorInfoBase>(engine, "GetServiceError");
     ClassBinder::method<::ll::service::GetServiceError>(engine, "message", &::ll::service::GetServiceError::message);
     ClassBinder::expose<::ll::service::GetServiceError>(engine, ns.handle(), "GetServiceError");
 
@@ -51,6 +57,8 @@ void bind_ll_api_service_ServiceManager(ScriptEngine& engine) {
     ClassBinder::registerClass<::ll::service::ServiceManager>(engine, "ServiceManager");
     ClassBinder::method<::ll::service::ServiceManager>(engine, "queryService", &::ll::service::ServiceManager::queryService);
     ClassBinder::method<::ll::service::ServiceManager>(engine, "queryServices", &::ll::service::ServiceManager::queryServices);
+    ClassBinder::method<::ll::service::ServiceManager>(engine, "unregisterService", static_cast<bool (::ll::service::ServiceManager::*)(const ll::service::ServiceIdView &)>(&::ll::service::ServiceManager::unregisterService));
+    ClassBinder::method<::ll::service::ServiceManager>(engine, "unregisterService", static_cast<void (::ll::service::ServiceManager::*)(const ll::mod::Mod &)>(&::ll::service::ServiceManager::unregisterService));
     ClassBinder::staticMethod<::ll::service::ServiceManager>(engine, "getInstance", &::ll::service::ServiceManager::getInstance);
     ClassBinder::expose<::ll::service::ServiceManager>(engine, ns.handle(), "ServiceManager");
 

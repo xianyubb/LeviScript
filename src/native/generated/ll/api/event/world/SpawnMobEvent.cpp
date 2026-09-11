@@ -8,11 +8,30 @@
 #include <vector>
 
 #include "ll/api/event/world/SpawnMobEvent.h"
+#include "ll/api/event/Cancellable.h"
+#include "mc/world/actor/Actor.h"
+#include "mc/world/actor/ActorDefinitionIdentifier.h"
+#include "mc/deps/nbt/CompoundTag.h"
+#include "mc/deps/core/math/Vec3.h"
+#include "ll/api/event/world/WorldEvent.h"
+#include "mc/deps/core/utility/optional_ref.h"
+#include "mc/world/actor/Mob.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::event::world::SpawnMobEvent)
+LS_NATIVE_CLASS(::ll::event::Cancellable<ll::event::SpawnMobEvent>)
+LS_NATIVE_CLASS(::ll::event::world::SpawningMobEvent)
+LS_NATIVE_CLASS(::ll::event::world::SpawnedMobEvent)
+LS_NATIVE_CLASS(::Actor)
+LS_NATIVE_CLASS(::ActorDefinitionIdentifier)
+LS_NATIVE_CLASS(::CompoundTag)
+LS_NATIVE_CLASS(::Vec3)
+LS_NATIVE_CLASS(::ll::event::WorldEvent)
+LS_NATIVE_CLASS(::optional_ref<Actor>)
+LS_NATIVE_CLASS(::Mob)
+LS_NATIVE_CLASS(::optional_ref<Mob>)
 
 namespace ls::native::generated {
 
@@ -38,12 +57,36 @@ void bind_ll_api_event_world_SpawnMobEvent(ScriptEngine& engine) {
     Local<Value>  probe2 = ns1.getProperty("world");
     Local<Object> ns = probe2.isObject() ? Local<Object>(probe2) : makeObject(engine);
 
-    // -- SpawnMobEvent --------------------
-    ClassBinder::registerClass<::ll::event::world::SpawnMobEvent>(engine, "SpawnMobEvent");
+    // -- SpawnMobEvent : WorldEvent --------------------
+    ClassBinder::registerClass<::ll::event::world::SpawnMobEvent, ::ll::event::WorldEvent>(engine, "SpawnMobEvent");
+    ClassBinder::method<::ll::event::world::SpawnMobEvent>(engine, "serialize", &::ll::event::world::SpawnMobEvent::serialize);
+    ClassBinder::method<::ll::event::world::SpawnMobEvent>(engine, "identifier", &::ll::event::world::SpawnMobEvent::identifier);
+    ClassBinder::method<::ll::event::world::SpawnMobEvent>(engine, "spawner", &::ll::event::world::SpawnMobEvent::spawner);
+    ClassBinder::method<::ll::event::world::SpawnMobEvent>(engine, "pos", &::ll::event::world::SpawnMobEvent::pos);
     ClassBinder::method<::ll::event::world::SpawnMobEvent>(engine, "naturalSpawn", &::ll::event::world::SpawnMobEvent::naturalSpawn);
     ClassBinder::method<::ll::event::world::SpawnMobEvent>(engine, "surface", &::ll::event::world::SpawnMobEvent::surface);
     ClassBinder::method<::ll::event::world::SpawnMobEvent>(engine, "fromSpawner", &::ll::event::world::SpawnMobEvent::fromSpawner);
     ClassBinder::expose<::ll::event::world::SpawnMobEvent>(engine, ns.handle(), "SpawnMobEvent");
+
+    // -- CancellableSpawnMobEvent --------------------
+    ClassBinder::registerClass<::ll::event::Cancellable<ll::event::SpawnMobEvent>>(engine, "CancellableSpawnMobEvent");
+    ClassBinder::method<::ll::event::Cancellable<ll::event::SpawnMobEvent>>(engine, "serialize", &::ll::event::Cancellable<ll::event::SpawnMobEvent>::serialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::SpawnMobEvent>>(engine, "deserialize", &::ll::event::Cancellable<ll::event::SpawnMobEvent>::deserialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::SpawnMobEvent>>(engine, "isCancelled", &::ll::event::Cancellable<ll::event::SpawnMobEvent>::isCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::SpawnMobEvent>>(engine, "setCancelled", &::ll::event::Cancellable<ll::event::SpawnMobEvent>::setCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::SpawnMobEvent>>(engine, "cancel", &::ll::event::Cancellable<ll::event::SpawnMobEvent>::cancel);
+    ClassBinder::expose<::ll::event::Cancellable<ll::event::SpawnMobEvent>>(engine, ns.handle(), "CancellableSpawnMobEvent");
+
+    // -- SpawningMobEvent : CancellableSpawnMobEvent --------------------
+    ClassBinder::registerClass<::ll::event::world::SpawningMobEvent, ::ll::event::Cancellable<ll::event::SpawnMobEvent>>(engine, "SpawningMobEvent");
+    ClassBinder::method<::ll::event::world::SpawningMobEvent>(engine, "deserialize", &::ll::event::world::SpawningMobEvent::deserialize);
+    ClassBinder::expose<::ll::event::world::SpawningMobEvent>(engine, ns.handle(), "SpawningMobEvent");
+
+    // -- SpawnedMobEvent : SpawnMobEvent --------------------
+    ClassBinder::registerClass<::ll::event::world::SpawnedMobEvent, ::ll::event::world::SpawnMobEvent>(engine, "SpawnedMobEvent");
+    ClassBinder::method<::ll::event::world::SpawnedMobEvent>(engine, "serialize", &::ll::event::world::SpawnedMobEvent::serialize);
+    ClassBinder::method<::ll::event::world::SpawnedMobEvent>(engine, "mob", &::ll::event::world::SpawnedMobEvent::mob);
+    ClassBinder::expose<::ll::event::world::SpawnedMobEvent>(engine, ns.handle(), "SpawnedMobEvent");
 
     ns1.setProperty("world", ns);
     ns0.setProperty("event", ns1);

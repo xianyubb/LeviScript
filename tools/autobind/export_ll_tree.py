@@ -39,6 +39,7 @@ import sys
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from clang import cindex
+from clang.cindex import CursorKind
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import autobind             # noqa: E402
@@ -83,11 +84,58 @@ def _leaf_of(canon_key: str) -> str:
     return base.split("::")[-1].strip()
 
 
+class TemplateResolver:
+    """Resolves a CLASS_TEMPLATE pattern by parsing its (small) defining header on demand
+    and caching the result. Used to recover the dependent base of a template
+    specialization base (e.g. `Cancellable<T> : T`) without walking heavy MC TUs."""
+
+    def __init__(self, index, args: List[str], resolver: ph.HeaderResolver,
+                 include_dirs: List[str], roots: List[str]):
+        self.index = index
+        self.args = args
+        self.resolver = resolver
+        self.include_dirs = include_dirs
+        self.roots = set(roots)
+        self.cache: Dict[str, Any] = {}
+        self.tus: Dict[str, Any] = {}
+
+    def __call__(self, qname: str, leaf: str):
+        if qname in self.cache:
+            return self.cache[qname]
+        result = None
+        for path in self.resolver.candidates(leaf):
+            rel = ph.include_relative(path, self.include_dirs)
+            if rel is None or rel.split("/")[0] not in self.roots:
+                continue
+            tu = self.tus.get(path)
+            if tu is None:
+                tu = ph.parse_one(self.index, path, self.args)
+                self.tus[path] = tu
+            result = self._find(tu.cursor, qname)
+            if result is not None:
+                break
+        self.cache[qname] = result
+        return result
+
+    @staticmethod
+    def _find(cursor, qname: str):
+        for child in cursor.get_children():
+            if child.kind == CursorKind.CLASS_TEMPLATE and ph.qualified_name(child) == qname \
+                    and child.is_definition():
+                return child
+            if child.kind in (CursorKind.NAMESPACE, CursorKind.CLASS_DECL, CursorKind.STRUCT_DECL,
+                              CursorKind.CLASS_TEMPLATE):
+                found = TemplateResolver._find(child, qname)
+                if found is not None:
+                    return found
+        return None
+
+
 # --------------------------------------------------------------------------- #
 # Phase A: lightweight global scan (one TU at a time)
 # --------------------------------------------------------------------------- #
 def scan_headers(index, seed_headers: List[str], include_dirs: List[str], args: List[str],
-                 base_cfg: Dict[str, Any]) -> Tuple[Dict[str, Dict[str, str]], Set[str], Set[str], Set[str]]:
+                 base_cfg: Dict[str, Any], tmpl_resolver) -> Tuple[Dict[str, Dict[str, str]], Set[str], Set[str], Set[str]]:
     """Return (ll_types, refs, base_keep, skip_headers).
 
     ll_types : canonKey -> {cppType, scriptName, header} for every non-template class
@@ -116,8 +164,7 @@ def scan_headers(index, seed_headers: List[str], include_dirs: List[str], args: 
         target_files = {os.path.normcase(os.path.abspath(header))}
         extractor = ph.Extractor(cfg, target_files)
         extractor.run(tu)
-        extractor.index_definitions(tu)   # so base template patterns are resolvable
-        extractor.expand_base_instantiations()
+        extractor.expand_base_instantiations(tmpl_resolver)
         ph.resolve_bases(extractor)
         for entry in extractor.classes.values():
             base_cpp = entry.get("_baseCppType")
@@ -159,14 +206,18 @@ def resolve_external(refs: Set[str], ll_types: Dict[str, Dict[str, str]], resolv
         leaf = _leaf_of(canon)
         if not leaf or not re.match(r"^[A-Za-z_]", leaf):
             continue
-        chosen: Optional[str] = None
+        cands: List[str] = []
         for path in resolver.candidates(leaf):
             rel = ph.include_relative(path, include_dirs)
             if rel and rel.split("/")[0] in root_set:
-                chosen = rel
-                break
-        if chosen is None:
+                cands.append(rel)
+        # Only bind when the leaf resolves to EXACTLY ONE header under the roots. An
+        # ambiguous leaf (e.g. "Impl", a common PIMPL nested-class name) would guess a
+        # wrong header and emit a non-compiling opaque binding, so skip it instead; the
+        # referencing member is then dropped by classify (type not in the bound set).
+        if len(cands) != 1:
             continue
+        chosen = cands[0]
         script = re.sub(r"[^A-Za-z0-9]", "", canon.split("::")[-1].rstrip(">")) or leaf
         external[canon] = {"cppType": "::" + canon if not canon.startswith("::") else canon,
                            "scriptName": script, "header": chosen}
@@ -207,7 +258,13 @@ def wire_cross_file(spec: Dict[str, Any], owners: Dict[str, Dict[str, str]],
         base_cpp = cls.get("_baseCppType")
         if base_cpp and base_cpp.lstrip(":") not in own:
             cls["base"] = None
-            cls["baseCppType"] = base_cpp if base_cpp.startswith("::") else "::" + base_cpp
+            owner = owners.get(base_cpp.lstrip(":"))
+            if owner is not None and owner["bindFunc"] != this_func:
+                cls["baseCppType"] = base_cpp if base_cpp.startswith("::") else "::" + base_cpp
+            # else: base is not bound anywhere -> drop the edge (base stays None) so we
+            # never emit registerClass<Derived, Unbound> (which would fail the
+            # is_native_class static_assert). The base is still in _refs; wire() adds it
+            # only when an owner exists.
         elif not base_cpp:
             cls["base"] = None
         for ref in cls.get("_refs", []):
@@ -275,11 +332,31 @@ def emit_registrar(output_root: str, prefix: str, registrar: List[Tuple[str, str
     return path
 
 
-def write_spec(out_root: str, out_rel: str, spec: Dict[str, Any]) -> None:
+def write_spec(out_root: str, out_rel: str, spec: Dict[str, Any]) -> str:
     out_path = os.path.join(out_root, out_rel.replace("/", os.sep))
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w", encoding="utf-8", newline="\n") as handle:
         handle.write(autobind.generate_cpp(spec))
+    return out_path
+
+
+def clean_stale(out_root: str, written: Set[str]) -> int:
+    """Delete .cpp files under out_root that were NOT written this run, so bindings for
+    headers/types that are no longer exported (e.g. a now-skipped specialization) do not
+    linger and break the build."""
+    removed = 0
+    for dirpath, _dirs, filenames in os.walk(out_root):
+        for name in filenames:
+            if not name.endswith(".cpp"):
+                continue
+            path = os.path.normcase(os.path.abspath(os.path.join(dirpath, name)))
+            if path not in written:
+                try:
+                    os.remove(path)
+                    removed += 1
+                except OSError:
+                    pass
+    return removed
 
 
 # --------------------------------------------------------------------------- #
@@ -289,6 +366,9 @@ def main(argv: List[str]) -> int:
     ap = argparse.ArgumentParser(description="Export a header tree to mirrored per-header binding files")
     ap.add_argument("config", help="tree config JSON (headerRoot, includeDirs, defines, outputRoot, ...)")
     ap.add_argument("--report", help="write the coverage report (JSON) here")
+    ap.add_argument("--scan-cache", help="path to cache/load the Phase-A scan (ll types, refs, base edges)")
+    ap.add_argument("--reuse-scan", action="store_true",
+                    help="reuse the --scan-cache instead of re-parsing every header (Phase-B-only rerun)")
     args = ap.parse_args(argv)
 
     with open(args.config, "r", encoding="utf-8-sig") as handle:
@@ -320,12 +400,31 @@ def main(argv: List[str]) -> int:
                     if ph.include_relative(h, include_dirs) is not None]
     print(f"enumerated {len(seed_headers)} seed header(s) under {header_root}")
 
-    # ---- Phase A: global scan (memory-bounded) ---------------------------- #
-    print("[A] scanning seed headers for the global type registry...")
-    ll_types, refs, base_keep, unclean = scan_headers(index, seed_headers, include_dirs, parse_args, base_cfg)
+    # ---- Phase A: global scan (memory-bounded), optionally cached ---------- #
+    resolver = ph.HeaderResolver(include_dirs)
+    tmpl_resolver = TemplateResolver(index, parse_args, resolver, include_dirs, closure_roots)
+    cache_path = args.scan_cache
+    loaded = None
+    if args.reuse_scan and cache_path and os.path.exists(cache_path):
+        with open(cache_path, "r", encoding="utf-8") as handle:
+            loaded = json.load(handle)
+        print(f"[A] reusing scan cache: {cache_path}")
+    if loaded is not None:
+        ll_types = loaded["llTypes"]
+        refs = set(loaded["refs"])
+        base_keep = set(loaded["baseKeep"])
+        unclean = set(loaded["unclean"])
+    else:
+        print("[A] scanning seed headers for the global type registry...")
+        ll_types, refs, base_keep, unclean = scan_headers(index, seed_headers, include_dirs, parse_args,
+                                                          base_cfg, tmpl_resolver)
+        if cache_path:
+            with open(cache_path, "w", encoding="utf-8", newline="\n") as handle:
+                json.dump({"llTypes": ll_types, "refs": sorted(refs), "baseKeep": sorted(base_keep),
+                           "unclean": sorted(unclean)}, handle, ensure_ascii=False)
+            print(f"[A] scan cache written: {cache_path}")
     skip_headers |= unclean
 
-    resolver = ph.HeaderResolver(include_dirs)
     external = resolve_external(refs, ll_types, resolver, include_dirs, closure_roots)
     print(f"[A] external (opaque) types to bind: {len(external)}")
 
@@ -367,6 +466,7 @@ def main(argv: List[str]) -> int:
         registrar: List[Tuple[str, str]] = []
         deps: Dict[str, Set[str]] = {}
         totals = [0, 0, 0]
+        written: Set[str] = set()
         for header in seed_headers:
             header_rel = ph.include_relative(header, include_dirs)
             if header_rel is None or header_rel in skip_headers:
@@ -383,13 +483,13 @@ def main(argv: List[str]) -> int:
                            "keepTypes": base_keep})
             extractor = ph.Extractor(ex_cfg, {os.path.normcase(os.path.abspath(header))})
             extractor.run(tu)
-            extractor.index_definitions(tu)   # so base template patterns are resolvable
+            extractor.expand_base_instantiations(tmpl_resolver)
             spec = ph.build_spec(extractor, ctx, ex_cfg)
             del extractor, tu
             if not spec["classes"] and not spec["functions"]:
                 continue
             wire_cross_file(spec, owners[target], deps)
-            write_spec(out_root, out_rel, spec)
+            written.add(os.path.normcase(os.path.abspath(write_spec(out_root, out_rel, spec))))
             registrar.append((func_name, out_rel))
             totals[0] += 1
             totals[1] += len(spec["classes"])
@@ -412,7 +512,7 @@ def main(argv: List[str]) -> int:
                         "properties": [], "staticMethods": []} for inf in ext_by_header[ext_header]]
             spec = {"namespace": namespace, "functionName": func_name, "includes": [ext_header],
                     "classes": classes, "functions": [], "extraNativeClasses": []}
-            write_spec(out_root, out_rel, spec)
+            written.add(os.path.normcase(os.path.abspath(write_spec(out_root, out_rel, spec))))
             registrar.append((func_name, out_rel))
             totals[0] += 1
             totals[1] += len(classes)
@@ -423,7 +523,11 @@ def main(argv: List[str]) -> int:
         if registrar:
             entry = f"bindAllGenerated{prefix.capitalize()}" + ("" if target == "server" else "Client")
             path = emit_registrar(out_root, prefix, registrar, entry)
+            written.add(os.path.normcase(os.path.abspath(path)))
             print(f"  registrar: {path} ({len(registrar)} bind functions)")
+        removed = clean_stale(out_root, written)
+        if removed:
+            print(f"  removed {removed} stale file(s) not produced this run")
         print(f"[B:{target}] {totals[0]} file(s) ({ext_count} external), {totals[1]} classes, {totals[2]} functions")
         grand[target] = totals
 

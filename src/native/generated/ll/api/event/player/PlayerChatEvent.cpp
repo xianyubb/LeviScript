@@ -8,11 +8,17 @@
 #include <vector>
 
 #include "ll/api/event/player/PlayerChatEvent.h"
+#include "ll/api/event/Cancellable.h"
+#include "mc/deps/nbt/CompoundTag.h"
+#include "ll/api/event/player/ServerPlayerEvent.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
+LS_NATIVE_CLASS(::ll::event::Cancellable<ll::event::ServerPlayerEvent>)
 LS_NATIVE_CLASS(::ll::event::player::PlayerChatEvent)
+LS_NATIVE_CLASS(::CompoundTag)
+LS_NATIVE_CLASS(::ll::event::ServerPlayerEvent)
 
 namespace ls::native::generated {
 
@@ -38,9 +44,19 @@ void bind_ll_api_event_player_PlayerChatEvent(ScriptEngine& engine) {
     Local<Value>  probe2 = ns1.getProperty("player");
     Local<Object> ns = probe2.isObject() ? Local<Object>(probe2) : makeObject(engine);
 
-    // -- PlayerChatEvent --------------------
-    ClassBinder::registerClass<::ll::event::player::PlayerChatEvent>(engine, "PlayerChatEvent");
-    ClassBinder::method<::ll::event::player::PlayerChatEvent>(engine, "message", &::ll::event::player::PlayerChatEvent::message);
+    // -- CancellableServerPlayerEvent : ServerPlayerEvent --------------------
+    ClassBinder::registerClass<::ll::event::Cancellable<ll::event::ServerPlayerEvent>, ::ll::event::ServerPlayerEvent>(engine, "CancellableServerPlayerEvent");
+    ClassBinder::method<::ll::event::Cancellable<ll::event::ServerPlayerEvent>>(engine, "serialize", &::ll::event::Cancellable<ll::event::ServerPlayerEvent>::serialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::ServerPlayerEvent>>(engine, "deserialize", &::ll::event::Cancellable<ll::event::ServerPlayerEvent>::deserialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::ServerPlayerEvent>>(engine, "isCancelled", &::ll::event::Cancellable<ll::event::ServerPlayerEvent>::isCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::ServerPlayerEvent>>(engine, "setCancelled", &::ll::event::Cancellable<ll::event::ServerPlayerEvent>::setCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::ServerPlayerEvent>>(engine, "cancel", &::ll::event::Cancellable<ll::event::ServerPlayerEvent>::cancel);
+    ClassBinder::expose<::ll::event::Cancellable<ll::event::ServerPlayerEvent>>(engine, ns.handle(), "CancellableServerPlayerEvent");
+
+    // -- PlayerChatEvent : CancellableServerPlayerEvent --------------------
+    ClassBinder::registerClass<::ll::event::player::PlayerChatEvent, ::ll::event::Cancellable<ll::event::ServerPlayerEvent>>(engine, "PlayerChatEvent");
+    ClassBinder::method<::ll::event::player::PlayerChatEvent>(engine, "serialize", &::ll::event::player::PlayerChatEvent::serialize);
+    ClassBinder::method<::ll::event::player::PlayerChatEvent>(engine, "deserialize", &::ll::event::player::PlayerChatEvent::deserialize);
     ClassBinder::expose<::ll::event::player::PlayerChatEvent>(engine, ns.handle(), "PlayerChatEvent");
 
     ns1.setProperty("player", ns);

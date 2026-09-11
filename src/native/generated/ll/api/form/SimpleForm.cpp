@@ -8,11 +8,13 @@
 #include <vector>
 
 #include "ll/api/form/SimpleForm.h"
+#include "ll/api/form/FormBase.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::form::SimpleForm)
+LS_NATIVE_CLASS(::ll::form::Form)
 
 namespace ls::native::generated {
 
@@ -36,8 +38,8 @@ void bind_ll_api_form_SimpleForm(ScriptEngine& engine) {
     Local<Value>  probe1 = ns0.getProperty("form");
     Local<Object> ns = probe1.isObject() ? Local<Object>(probe1) : makeObject(engine);
 
-    // -- SimpleForm --------------------
-    ClassBinder::registerClass<::ll::form::SimpleForm>(engine, "SimpleForm");
+    // -- SimpleForm : Form --------------------
+    ClassBinder::registerClass<::ll::form::SimpleForm, ::ll::form::Form>(engine, "SimpleForm");
     ClassBinder::method<::ll::form::SimpleForm>(engine, "setTitle", &::ll::form::SimpleForm::setTitle);
     ClassBinder::method<::ll::form::SimpleForm>(engine, "setContent", &::ll::form::SimpleForm::setContent);
     ClassBinder::method<::ll::form::SimpleForm>(engine, "appendHeader", &::ll::form::SimpleForm::appendHeader);

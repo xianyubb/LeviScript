@@ -8,10 +8,15 @@
 #include <vector>
 
 #include "ll/api/utils/SystemUtils.h"
+#include "ll/api/data/TmWithMs.h"
+#include "ll/api/data/Version.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
+LS_NATIVE_CLASS(::ll::utils::sys_utils::DynamicLibrary)
+LS_NATIVE_CLASS(::ll::data::TmWithMs)
+LS_NATIVE_CLASS(::ll::data::Version)
 
 namespace ls::native::generated {
 
@@ -35,17 +40,27 @@ void bind_ll_api_utils_SystemUtils(ScriptEngine& engine) {
     Local<Value>  probe1 = ns0.getProperty("utils");
     Local<Object> ns = probe1.isObject() ? Local<Object>(probe1) : makeObject(engine);
 
+    // -- DynamicLibrary --------------------
+    ClassBinder::registerClass<::ll::utils::sys_utils::DynamicLibrary>(engine, "DynamicLibrary");
+    ClassBinder::method<::ll::utils::sys_utils::DynamicLibrary>(engine, "handle", &::ll::utils::sys_utils::DynamicLibrary::handle);
+    ClassBinder::constructor<::ll::utils::sys_utils::DynamicLibrary>(engine, +[]() -> ::ll::utils::sys_utils::DynamicLibrary* { return new ::ll::utils::sys_utils::DynamicLibrary(); });
+    ClassBinder::expose<::ll::utils::sys_utils::DynamicLibrary>(engine, ns.handle(), "DynamicLibrary");
+
     // -- free functions --------------------
+    ns.setProperty("getCurrentModuleHandle", makeFunction(engine, makeNativeFunction(static_cast<void * (*)()>(&::ll::utils::sys_utils::getCurrentModuleHandle))));
     ns.setProperty("getModuleHandle", makeFunction(engine, makeNativeFunction(static_cast<void * (*)(void *)>(&::ll::utils::sys_utils::getModuleHandle))));
     ns.setProperty("getModulePath", makeFunction(engine, makeNativeFunction(static_cast<std::optional<std::filesystem::path> (*)(void *, void *)>(&::ll::utils::sys_utils::getModulePath))));
     ns.setProperty("getModuleFileName", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string<char> (*)(void *, void *)>(&::ll::utils::sys_utils::getModuleFileName))));
+    ns.setProperty("getCallerModuleFileName", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string<char> (*)(void *)>(&::ll::utils::sys_utils::getCallerModuleFileName))));
     ns.setProperty("getSystemLocaleCode", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string<char> (*)()>(&::ll::utils::sys_utils::getSystemLocaleCode))));
     ns.setProperty("getSystemName", makeFunction(engine, makeNativeFunction(static_cast<const std::basic_string<char> & (*)()>(&::ll::utils::sys_utils::getSystemName))));
+    ns.setProperty("getLocalTime", makeFunction(engine, makeNativeFunction(static_cast<ll::data::TmWithMs (*)()>(&::ll::utils::sys_utils::getLocalTime))));
     ns.setProperty("getEnvironmentVariable", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string<char> (*)(std::basic_string_view<char>)>(&::ll::utils::sys_utils::getEnvironmentVariable))));
     ns.setProperty("setEnvironmentVariable", makeFunction(engine, makeNativeFunction(static_cast<bool (*)(std::basic_string_view<char>, std::basic_string_view<char>)>(&::ll::utils::sys_utils::setEnvironmentVariable))));
     ns.setProperty("addOrSetEnvironmentVariable", makeFunction(engine, makeNativeFunction(static_cast<bool (*)(std::basic_string_view<char>, std::basic_string_view<char>)>(&::ll::utils::sys_utils::addOrSetEnvironmentVariable))));
     ns.setProperty("isStdoutSupportAnsi", makeFunction(engine, makeNativeFunction(static_cast<bool (*)()>(&::ll::utils::sys_utils::isStdoutSupportAnsi))));
     ns.setProperty("isWine", makeFunction(engine, makeNativeFunction(static_cast<bool (*)()>(&::ll::utils::sys_utils::isWine))));
+    ns.setProperty("getSystemVersion", makeFunction(engine, makeNativeFunction(static_cast<ll::data::Version (*)()>(&::ll::utils::sys_utils::getSystemVersion))));
 
     ns0.setProperty("utils", ns);
     global.setProperty("ll", ns0);

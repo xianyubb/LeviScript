@@ -8,10 +8,12 @@
 #include <vector>
 
 #include "ll/api/Versions.h"
+#include "ll/api/data/Version.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
+LS_NATIVE_CLASS(::ll::data::Version)
 
 namespace ls::native::generated {
 
@@ -34,6 +36,8 @@ void bind_ll_api_Versions(ScriptEngine& engine) {
     Local<Object> ns = probe0.isObject() ? Local<Object>(probe0) : makeObject(engine);
 
     // -- free functions --------------------
+    ns.setProperty("getGameVersion", makeFunction(engine, makeNativeFunction(static_cast<ll::data::Version (*)()>(&::ll::getGameVersion))));
+    ns.setProperty("getLoaderVersion", makeFunction(engine, makeNativeFunction(static_cast<ll::data::Version (*)()>(&::ll::getLoaderVersion))));
     ns.setProperty("getNetworkProtocolVersion", makeFunction(engine, makeNativeFunction(static_cast<int (*)()>(&::ll::getNetworkProtocolVersion))));
     ns.setProperty("isClient", makeFunction(engine, makeNativeFunction(static_cast<bool (*)()>(&::ll::isClient))));
 

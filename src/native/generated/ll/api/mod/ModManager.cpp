@@ -8,11 +8,13 @@
 #include <vector>
 
 #include "ll/api/mod/ModManager.h"
+#include "ll/api/mod/Mod.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::mod::ModManager)
+LS_NATIVE_CLASS(::ll::mod::Mod)
 
 namespace ls::native::generated {
 
@@ -40,6 +42,7 @@ void bind_ll_api_mod_ModManager(ScriptEngine& engine) {
     ClassBinder::registerClass<::ll::mod::ModManager>(engine, "ModManager");
     ClassBinder::method<::ll::mod::ModManager>(engine, "getType", &::ll::mod::ModManager::getType);
     ClassBinder::method<::ll::mod::ModManager>(engine, "hasMod", &::ll::mod::ModManager::hasMod);
+    ClassBinder::method<::ll::mod::ModManager>(engine, "getMod", &::ll::mod::ModManager::getMod);
     ClassBinder::method<::ll::mod::ModManager>(engine, "getModCount", &::ll::mod::ModManager::getModCount);
     ClassBinder::expose<::ll::mod::ModManager>(engine, ns.handle(), "ModManager");
 

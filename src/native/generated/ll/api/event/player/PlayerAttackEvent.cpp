@@ -8,11 +8,19 @@
 #include <vector>
 
 #include "ll/api/event/player/PlayerAttackEvent.h"
+#include "ll/api/event/Cancellable.h"
+#include "mc/world/actor/Actor.h"
+#include "mc/deps/nbt/CompoundTag.h"
+#include "ll/api/event/player/PlayerClickEvent.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
+LS_NATIVE_CLASS(::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>)
 LS_NATIVE_CLASS(::ll::event::player::PlayerAttackEvent)
+LS_NATIVE_CLASS(::Actor)
+LS_NATIVE_CLASS(::CompoundTag)
+LS_NATIVE_CLASS(::ll::event::PlayerLeftClickEvent)
 
 namespace ls::native::generated {
 
@@ -38,8 +46,19 @@ void bind_ll_api_event_player_PlayerAttackEvent(ScriptEngine& engine) {
     Local<Value>  probe2 = ns1.getProperty("player");
     Local<Object> ns = probe2.isObject() ? Local<Object>(probe2) : makeObject(engine);
 
-    // -- PlayerAttackEvent --------------------
-    ClassBinder::registerClass<::ll::event::player::PlayerAttackEvent>(engine, "PlayerAttackEvent");
+    // -- CancellablePlayerLeftClickEvent : PlayerLeftClickEvent --------------------
+    ClassBinder::registerClass<::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>, ::ll::event::PlayerLeftClickEvent>(engine, "CancellablePlayerLeftClickEvent");
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>>(engine, "serialize", &::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>::serialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>>(engine, "deserialize", &::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>::deserialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>>(engine, "isCancelled", &::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>::isCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>>(engine, "setCancelled", &::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>::setCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>>(engine, "cancel", &::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>::cancel);
+    ClassBinder::expose<::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>>(engine, ns.handle(), "CancellablePlayerLeftClickEvent");
+
+    // -- PlayerAttackEvent : CancellablePlayerLeftClickEvent --------------------
+    ClassBinder::registerClass<::ll::event::player::PlayerAttackEvent, ::ll::event::Cancellable<ll::event::PlayerLeftClickEvent>>(engine, "PlayerAttackEvent");
+    ClassBinder::method<::ll::event::player::PlayerAttackEvent>(engine, "serialize", &::ll::event::player::PlayerAttackEvent::serialize);
+    ClassBinder::method<::ll::event::player::PlayerAttackEvent>(engine, "target", &::ll::event::player::PlayerAttackEvent::target);
     ClassBinder::method<::ll::event::player::PlayerAttackEvent>(engine, "cause", &::ll::event::player::PlayerAttackEvent::cause);
     ClassBinder::expose<::ll::event::player::PlayerAttackEvent>(engine, ns.handle(), "PlayerAttackEvent");
 

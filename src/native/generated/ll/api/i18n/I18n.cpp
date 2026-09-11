@@ -8,11 +8,14 @@
 #include <vector>
 
 #include "ll/api/i18n/I18n.h"
+#include "ll/api/Expected.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::i18n::I18n)
+LS_NATIVE_CLASS(::ll::i18n::I18nStringError)
+LS_NATIVE_CLASS(::ll::ErrorInfoBase)
 
 namespace ls::native::generated {
 
@@ -44,8 +47,16 @@ void bind_ll_api_i18n_I18n(ScriptEngine& engine) {
     ClassBinder::constructor<::ll::i18n::I18n>(engine, +[]() -> ::ll::i18n::I18n* { return new ::ll::i18n::I18n(); });
     ClassBinder::expose<::ll::i18n::I18n>(engine, ns.handle(), "I18n");
 
+    // -- I18nStringError : ErrorInfoBase --------------------
+    ClassBinder::registerClass<::ll::i18n::I18nStringError, ::ll::ErrorInfoBase>(engine, "I18nStringError");
+    ClassBinder::method<::ll::i18n::I18nStringError>(engine, "message", static_cast<std::basic_string<char> (::ll::i18n::I18nStringError::*)() const noexcept>(&::ll::i18n::I18nStringError::message));
+    ClassBinder::method<::ll::i18n::I18nStringError>(engine, "message", static_cast<std::basic_string<char> (::ll::i18n::I18nStringError::*)(std::basic_string_view<char>) const noexcept>(&::ll::i18n::I18nStringError::message));
+    ClassBinder::method<::ll::i18n::I18nStringError>(engine, "key", &::ll::i18n::I18nStringError::key);
+    ClassBinder::expose<::ll::i18n::I18nStringError>(engine, ns.handle(), "I18nStringError");
+
     // -- free functions --------------------
     ns.setProperty("getDefaultLocaleCode", makeFunction(engine, makeNativeFunction(static_cast<std::basic_string_view<char> (*)()>(&::ll::i18n::getDefaultLocaleCode))));
+    ns.setProperty("getInstance", makeFunction(engine, makeNativeFunction(static_cast<ll::i18n::I18n & (*)()>(&::ll::i18n::getInstance))));
 
     ns0.setProperty("i18n", ns);
     global.setProperty("ll", ns0);

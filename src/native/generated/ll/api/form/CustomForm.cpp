@@ -8,11 +8,13 @@
 #include <vector>
 
 #include "ll/api/form/CustomForm.h"
+#include "ll/api/form/FormBase.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::form::CustomForm)
+LS_NATIVE_CLASS(::ll::form::Form)
 
 namespace ls::native::generated {
 
@@ -36,8 +38,8 @@ void bind_ll_api_form_CustomForm(ScriptEngine& engine) {
     Local<Value>  probe1 = ns0.getProperty("form");
     Local<Object> ns = probe1.isObject() ? Local<Object>(probe1) : makeObject(engine);
 
-    // -- CustomForm --------------------
-    ClassBinder::registerClass<::ll::form::CustomForm>(engine, "CustomForm");
+    // -- CustomForm : Form --------------------
+    ClassBinder::registerClass<::ll::form::CustomForm, ::ll::form::Form>(engine, "CustomForm");
     ClassBinder::method<::ll::form::CustomForm>(engine, "setTitle", &::ll::form::CustomForm::setTitle);
     ClassBinder::method<::ll::form::CustomForm>(engine, "setSubmitButton", &::ll::form::CustomForm::setSubmitButton);
     ClassBinder::method<::ll::form::CustomForm>(engine, "appendHeader", &::ll::form::CustomForm::appendHeader);

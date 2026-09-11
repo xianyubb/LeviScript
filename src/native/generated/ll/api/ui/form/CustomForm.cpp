@@ -8,6 +8,8 @@
 #include <vector>
 
 #include "ll/api/ui/form/CustomForm.h"
+#include "ll/api/Expected.h"
+#include "ll/api/coro/CoroTask.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
@@ -22,6 +24,8 @@ LS_NATIVE_CLASS(::ll::ui::TextFieldOptions)
 LS_NATIVE_CLASS(::ll::ui::TextOptions)
 LS_NATIVE_CLASS(::ll::ui::ToggleOptions)
 LS_NATIVE_CLASS(::ll::ui::CustomForm)
+LS_NATIVE_CLASS(::ll::Error)
+LS_NATIVE_CLASS(::ll::coro::CoroTask<nonstd::expected_lite::expected<DataDrivenScreenClosedReason, ll::Error>>)
 
 namespace ls::native::generated {
 
@@ -86,6 +90,7 @@ void bind_ll_api_ui_form_CustomForm(ScriptEngine& engine) {
     // -- CustomForm --------------------
     ClassBinder::registerClass<::ll::ui::CustomForm>(engine, "CustomForm");
     ClassBinder::method<::ll::ui::CustomForm>(engine, "closeButton", &::ll::ui::CustomForm::closeButton);
+    ClassBinder::method<::ll::ui::CustomForm>(engine, "showAsync", &::ll::ui::CustomForm::showAsync);
     ClassBinder::method<::ll::ui::CustomForm>(engine, "isShowing", &::ll::ui::CustomForm::isShowing);
     ClassBinder::expose<::ll::ui::CustomForm>(engine, ns.handle(), "CustomForm");
 

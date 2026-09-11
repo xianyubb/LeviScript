@@ -8,11 +8,13 @@
 #include <vector>
 
 #include "ll/api/memory/Memory.h"
+#include "mc/deps/core/memory/IMemoryAllocator.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::memory::DualMapping)
+LS_NATIVE_CLASS(::Bedrock::Memory::IMemoryAllocator)
 
 namespace ls::native::generated {
 
@@ -40,10 +42,15 @@ void bind_ll_api_memory_Memory(ScriptEngine& engine) {
     ClassBinder::registerClass<::ll::memory::DualMapping>(engine, "DualMapping");
     ClassBinder::method<::ll::memory::DualMapping>(engine, "alloc", &::ll::memory::DualMapping::alloc);
     ClassBinder::method<::ll::memory::DualMapping>(engine, "free", &::ll::memory::DualMapping::free);
+    ClassBinder::method<::ll::memory::DualMapping>(engine, "size", &::ll::memory::DualMapping::size);
+    ClassBinder::method<::ll::memory::DualMapping>(engine, "writable", &::ll::memory::DualMapping::writable);
+    ClassBinder::method<::ll::memory::DualMapping>(engine, "executable", &::ll::memory::DualMapping::executable);
+    ClassBinder::constructor<::ll::memory::DualMapping>(engine, +[]() -> ::ll::memory::DualMapping* { return new ::ll::memory::DualMapping(); });
     ClassBinder::expose<::ll::memory::DualMapping>(engine, ns.handle(), "DualMapping");
 
     // -- free functions --------------------
     ns.setProperty("getVtableIndex", makeFunction(engine, makeNativeFunction(static_cast<std::optional<unsigned int> (*)(void *)>(&::ll::memory::getVtableIndex))));
+    ns.setProperty("getDefaultAllocator", makeFunction(engine, makeNativeFunction(static_cast<Bedrock::Memory::IMemoryAllocator & (*)()>(&::ll::memory::getDefaultAllocator))));
     ns.setProperty("throwMemoryException", makeFunction(engine, makeNativeFunction(static_cast<void (*)(unsigned long long)>(&::ll::memory::throwMemoryException))));
     ns.setProperty("getUsableSize", makeFunction(engine, makeNativeFunction(static_cast<unsigned long long (*)(void *)>(&::ll::memory::getUsableSize))));
 

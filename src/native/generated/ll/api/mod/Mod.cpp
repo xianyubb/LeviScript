@@ -8,11 +8,15 @@
 #include <vector>
 
 #include "ll/api/mod/Mod.h"
+#include "ll/api/io/Logger.h"
+#include "ll/api/mod/Manifest.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::mod::Mod)
+LS_NATIVE_CLASS(::ll::io::Logger)
+LS_NATIVE_CLASS(::ll::mod::Manifest)
 
 namespace ls::native::generated {
 
@@ -39,6 +43,7 @@ void bind_ll_api_mod_Mod(ScriptEngine& engine) {
     // -- Mod --------------------
     ClassBinder::registerClass<::ll::mod::Mod>(engine, "Mod");
     ClassBinder::method<::ll::mod::Mod>(engine, "getState", &::ll::mod::Mod::getState);
+    ClassBinder::method<::ll::mod::Mod>(engine, "getManifest", &::ll::mod::Mod::getManifest);
     ClassBinder::method<::ll::mod::Mod>(engine, "getName", &::ll::mod::Mod::getName);
     ClassBinder::method<::ll::mod::Mod>(engine, "getType", &::ll::mod::Mod::getType);
     ClassBinder::method<::ll::mod::Mod>(engine, "getModDir", &::ll::mod::Mod::getModDir);
@@ -49,6 +54,9 @@ void bind_ll_api_mod_Mod(ScriptEngine& engine) {
     ClassBinder::method<::ll::mod::Mod>(engine, "getLangDir", &::ll::mod::Mod::getLangDir);
     ClassBinder::method<::ll::mod::Mod>(engine, "getResourceDir", &::ll::mod::Mod::getResourceDir);
     ClassBinder::method<::ll::mod::Mod>(engine, "getBehaviorDir", &::ll::mod::Mod::getBehaviorDir);
+    ClassBinder::method<::ll::mod::Mod>(engine, "getLogger", &::ll::mod::Mod::getLogger);
+    ClassBinder::method<::ll::mod::Mod>(engine, "isEnabled", &::ll::mod::Mod::isEnabled);
+    ClassBinder::method<::ll::mod::Mod>(engine, "isDisabled", &::ll::mod::Mod::isDisabled);
     ClassBinder::expose<::ll::mod::Mod>(engine, ns.handle(), "Mod");
 
     // -- free functions --------------------

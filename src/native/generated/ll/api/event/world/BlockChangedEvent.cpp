@@ -8,11 +8,17 @@
 #include <vector>
 
 #include "ll/api/event/world/BlockChangedEvent.h"
+#include "mc/world/level/BlockPos.h"
+#include "mc/deps/nbt/CompoundTag.h"
+#include "ll/api/event/world/WorldEvent.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::event::world::BlockChangedEvent)
+LS_NATIVE_CLASS(::BlockPos)
+LS_NATIVE_CLASS(::CompoundTag)
+LS_NATIVE_CLASS(::ll::event::WorldEvent)
 
 namespace ls::native::generated {
 
@@ -38,9 +44,11 @@ void bind_ll_api_event_world_BlockChangedEvent(ScriptEngine& engine) {
     Local<Value>  probe2 = ns1.getProperty("world");
     Local<Object> ns = probe2.isObject() ? Local<Object>(probe2) : makeObject(engine);
 
-    // -- BlockChangedEvent --------------------
-    ClassBinder::registerClass<::ll::event::world::BlockChangedEvent>(engine, "BlockChangedEvent");
+    // -- BlockChangedEvent : WorldEvent --------------------
+    ClassBinder::registerClass<::ll::event::world::BlockChangedEvent, ::ll::event::WorldEvent>(engine, "BlockChangedEvent");
+    ClassBinder::method<::ll::event::world::BlockChangedEvent>(engine, "serialize", &::ll::event::world::BlockChangedEvent::serialize);
     ClassBinder::method<::ll::event::world::BlockChangedEvent>(engine, "layer", &::ll::event::world::BlockChangedEvent::layer);
+    ClassBinder::method<::ll::event::world::BlockChangedEvent>(engine, "pos", &::ll::event::world::BlockChangedEvent::pos);
     ClassBinder::expose<::ll::event::world::BlockChangedEvent>(engine, ns.handle(), "BlockChangedEvent");
 
     ns1.setProperty("world", ns);

@@ -8,11 +8,13 @@
 #include <vector>
 
 #include "ll/api/io/Logger.h"
+#include "ll/api/io/Sink.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::io::Logger)
+LS_NATIVE_CLASS(::ll::io::SinkBase)
 
 namespace ls::native::generated {
 
@@ -38,6 +40,13 @@ void bind_ll_api_io_Logger(ScriptEngine& engine) {
 
     // -- Logger --------------------
     ClassBinder::registerClass<::ll::io::Logger>(engine, "Logger");
+    ClassBinder::method<::ll::io::Logger>(engine, "log", static_cast<void (::ll::io::Logger::*)(ll::io::LogLevel, std::basic_string<char> &&) const>(&::ll::io::Logger::log));
+    ClassBinder::method<::ll::io::Logger>(engine, "fatal", static_cast<void (::ll::io::Logger::*)(std::basic_string<char> &&) const>(&::ll::io::Logger::fatal));
+    ClassBinder::method<::ll::io::Logger>(engine, "error", static_cast<void (::ll::io::Logger::*)(std::basic_string<char> &&) const>(&::ll::io::Logger::error));
+    ClassBinder::method<::ll::io::Logger>(engine, "warn", static_cast<void (::ll::io::Logger::*)(std::basic_string<char> &&) const>(&::ll::io::Logger::warn));
+    ClassBinder::method<::ll::io::Logger>(engine, "info", static_cast<void (::ll::io::Logger::*)(std::basic_string<char> &&) const>(&::ll::io::Logger::info));
+    ClassBinder::method<::ll::io::Logger>(engine, "debug", static_cast<void (::ll::io::Logger::*)(std::basic_string<char> &&) const>(&::ll::io::Logger::debug));
+    ClassBinder::method<::ll::io::Logger>(engine, "trace", static_cast<void (::ll::io::Logger::*)(std::basic_string<char> &&) const>(&::ll::io::Logger::trace));
     ClassBinder::method<::ll::io::Logger>(engine, "getTitle", &::ll::io::Logger::getTitle);
     ClassBinder::method<::ll::io::Logger>(engine, "getLevel", &::ll::io::Logger::getLevel);
     ClassBinder::method<::ll::io::Logger>(engine, "shouldLog", &::ll::io::Logger::shouldLog);
@@ -45,6 +54,8 @@ void bind_ll_api_io_Logger(ScriptEngine& engine) {
     ClassBinder::method<::ll::io::Logger>(engine, "setFlushLevel", &::ll::io::Logger::setFlushLevel);
     ClassBinder::method<::ll::io::Logger>(engine, "flush", &::ll::io::Logger::flush);
     ClassBinder::method<::ll::io::Logger>(engine, "clearSink", &::ll::io::Logger::clearSink);
+    ClassBinder::method<::ll::io::Logger>(engine, "addSink", &::ll::io::Logger::addSink);
+    ClassBinder::method<::ll::io::Logger>(engine, "getSink", &::ll::io::Logger::getSink);
     ClassBinder::expose<::ll::io::Logger>(engine, ns.handle(), "Logger");
 
     ns0.setProperty("io", ns);

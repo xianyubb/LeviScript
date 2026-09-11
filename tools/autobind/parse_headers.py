@@ -240,6 +240,20 @@ def _strip_prefixes(canon: str) -> str:
     return canon.strip()
 
 
+def _is_std_string(canon: str) -> bool:
+    """True only for std::string / std::basic_string<char>. Excludes char8_t/char16_t/
+    char32_t (e.g. std::u8string = basic_string<char8_t>), which have no converter and
+    must NOT be treated as string (startswith("basic_string<char") would match them)."""
+    return (canon == "std::string" or canon.startswith("std::basic_string<char>")
+            or canon.startswith("std::basic_string<char,"))
+
+
+def _is_std_string_view(canon: str) -> bool:
+    """True only for std::string_view / std::basic_string_view<char> (not char8_t etc.)."""
+    return (canon == "std::string_view" or canon.startswith("std::basic_string_view<char>")
+            or canon.startswith("std::basic_string_view<char,"))
+
+
 def classify(ty, ctx: TypeCtx, as_param: bool = False) -> Tuple[bool, str]:
     """Return (bindable, reason). Conservative: unknown -> not bindable."""
     # Classify on the canonical type so typedefs (uint16_t, size_t, int32_t, ...)
@@ -259,17 +273,23 @@ def classify(ty, ctx: TypeCtx, as_param: bool = False) -> Tuple[bool, str]:
         return True, "enum"
 
     canon = _strip_prefixes(canon_ty.spelling)
-    if canon.startswith("std::basic_string<char") or canon == "std::string":
-        return True, "string"
-    if canon.startswith("std::filesystem::path"):
-        return True, "path"
-    if canon.startswith("std::basic_string_view<char") or canon == "std::string_view":
-        return (True, "string_view") if ctx.allow_string_view else (False, "string_view param not supported")
+    # The spelling-based string/path checks must NOT fire for references/pointers:
+    # the canonical spelling of `std::string&` is "std::basic_string<char> &", which
+    # startswith("std::basic_string<char") would wrongly accept (a non-const string&
+    # is an output parameter with no FromScript converter). References/pointers are
+    # handled by their own branches below, which inspect the pointee.
+    if kind not in POINTER_KINDS:
+        if _is_std_string(canon):
+            return True, "string"
+        if canon.startswith("std::filesystem::path"):
+            return True, "path"
+        if _is_std_string_view(canon):
+            return (True, "string_view") if ctx.allow_string_view else (False, "string_view param not supported")
 
     if kind == TypeKind.POINTER:
         pointee = canon_ty.get_pointee()
         pointee_canon = _strip_prefixes(pointee.get_canonical().spelling)
-        if pointee_canon.startswith("std::basic_string<char"):
+        if _is_std_string(pointee_canon):
             return True, "string"
         if pointee.get_canonical().kind in INTEGER_KINDS and pointee_canon == "char":
             # const char* is fine as a return, unsafe as a parameter -> reject params
@@ -287,7 +307,7 @@ def classify(ty, ctx: TypeCtx, as_param: bool = False) -> Tuple[bool, str]:
         pointee = canon_ty.get_pointee()
         pointee_canon = _strip_prefixes(pointee.get_canonical().spelling)
         non_const_lvalue = (kind == TypeKind.LVALUEREFERENCE and not pointee.is_const_qualified())
-        if pointee_canon.startswith("std::basic_string<char") or pointee_canon.startswith("std::filesystem::path"):
+        if _is_std_string(pointee_canon) or pointee_canon.startswith("std::filesystem::path"):
             if non_const_lvalue:
                 return False, "non-const string/path& output parameter not supported"
             return True, "string"
@@ -357,7 +377,7 @@ def classify_spelling(spelling: str, ctx: TypeCtx) -> Tuple[bool, str]:
         return True, "integer"
     if s in ("float", "double", "long double"):
         return True, "float"
-    if s.startswith("std::basic_string<char") or s == "std::string":
+    if _is_std_string(s):
         return True, "string"
     if s.startswith("std::filesystem::path"):
         return True, "path"
@@ -391,7 +411,7 @@ def ts_type_spelling(spelling: str, ctx: TypeCtx) -> str:
         return "boolean"
     if s in NUMERIC_NAMES or s in ("float", "double", "long double"):
         return "number"
-    if s.startswith("std::basic_string<char") or s == "std::string":
+    if _is_std_string(s) or s == "std::string":
         return "string"
     return ctx.script_name_by_cpp.get("::" + s) or ctx.script_name_by_cpp.get(s) or "any"
 
@@ -406,14 +426,14 @@ def ts_type(ty, ctx: TypeCtx) -> str:
     if kind in INTEGER_KINDS or kind in FLOAT_KINDS or kind == TypeKind.ENUM:
         return "number"
     canon = _strip_prefixes(canon_ty.spelling)
-    if canon.startswith("std::basic_string<char") or canon.startswith("std::basic_string_view<char"):
+    if _is_std_string(canon) or _is_std_string_view(canon):
         return "string"
     if canon.startswith("std::filesystem::path"):
         return "string"
     if kind == TypeKind.POINTER:
         pointee = canon_ty.get_pointee()
         pc = _strip_prefixes(pointee.get_canonical().spelling)
-        if pc.startswith("std::basic_string<char"):
+        if _is_std_string(pc):
             return "string"
         if pointee.get_canonical().kind in INTEGER_KINDS and pc == "char":
             return "string"
@@ -421,7 +441,7 @@ def ts_type(ty, ctx: TypeCtx) -> str:
     if kind in (TypeKind.LVALUEREFERENCE, TypeKind.RVALUEREFERENCE):
         pointee = canon_ty.get_pointee()
         pc = _strip_prefixes(pointee.get_canonical().spelling)
-        if pc.startswith("std::basic_string<char"):
+        if _is_std_string(pc):
             return "string"
         return _script_name_of_type(pointee, ctx) or ts_type(pointee, ctx)
     if canon.startswith("std::vector<"):
@@ -687,6 +707,15 @@ class Extractor:
             return
         if cursor.kind in (CursorKind.CLASS_DECL, CursorKind.STRUCT_DECL):
             if cursor.is_definition():
+                # An explicit template specialization (`template <> struct X<int>`) or a
+                # template is a CLASS_DECL/STRUCT_DECL whose declaration tokens start with
+                # `template`. collect_class keys it by qualified_name, which drops the
+                # arguments, so it would emit the bare template name
+                # (`registerClass<::X>` -> "requires template arguments"). Skip them;
+                # concrete specializations that matter are bound via their use sites.
+                if "template" in _tokens_before_body(cursor):
+                    self.skipped.append(f"template/specialization '{qualified_name(cursor)}' (skipped)")
+                    return
                 self.collect_class(cursor, None)
                 for child in cursor.get_children():
                     if child.kind in (CursorKind.CLASS_DECL, CursorKind.STRUCT_DECL,
@@ -793,7 +822,7 @@ class Extractor:
             self.classes[cpp_type] = entry
         return entry
 
-    def expand_base_instantiations(self) -> None:
+    def expand_base_instantiations(self, resolve_template=None) -> None:
         """Bind concrete template-specialization base classes locally.
 
         `class Derived final : public Template<Args>` loses its inheritance under a
@@ -801,6 +830,10 @@ class Extractor:
         no header binds on its own. Discover such bases, bind the concrete
         instantiation in the same file, and resolve the instantiation's own base by
         substituting the template arguments (e.g. `Cancellable<T> : T`).
+
+        `resolve_template(qname, leaf)` (optional) locates the CLASS_TEMPLATE pattern
+        for a specialization whose pattern is not already indexed; parsing the small
+        template header on demand avoids walking every heavy translation unit.
         """
         for entry in list(self.classes.values()):
             cursor = entry.get("_cursor")
@@ -818,19 +851,41 @@ class Extractor:
                     break
                 if _is_dependent_spec(canon, spelling):
                     break
+                # Skip specializations with NESTED template arguments (e.g.
+                # `CoroTask<expected<...>>`, `Optional<variant<...>>`): their argument
+                # types are rarely all declarable in the emitted file and they make poor
+                # script classes. Drop the base edge rather than emit non-compiling code.
+                inner_start = spelling.find("<")
+                inner = spelling[inner_start + 1:spelling.rfind(">")] if inner_start >= 0 else ""
+                if "<" in inner:
+                    self.skipped.append(f"base '{spelling}': nested template args (inheritance dropped)")
+                    break
                 template_cursor = canon.get_declaration()
                 if template_cursor is None:
                     break
                 # get_declaration() on an implicit specialization returns a childless
-                # CLASS_DECL; prefer the CLASS_TEMPLATE pattern (indexed from the
-                # included template header) which carries the template parameters, the
-                # dependent base, and the member declarations.
-                pattern = self.definitions.get(qualified_name(template_cursor))
-                if pattern is not None and pattern.kind == CursorKind.CLASS_TEMPLATE:
-                    template_cursor = pattern
+                # CLASS_DECL; obtain the CLASS_TEMPLATE pattern (which carries the
+                # template parameters, the dependent base, and the members) either from
+                # the index or by parsing the template's own header on demand.
+                if template_cursor.kind != CursorKind.CLASS_TEMPLATE:
+                    qname = qualified_name(template_cursor)
+                    pattern = self.definitions.get(qname)
+                    if pattern is None and resolve_template is not None:
+                        pattern = resolve_template(qname, qname.split("::")[-1])
+                    if pattern is not None and pattern.kind == CursorKind.CLASS_TEMPLATE:
+                        template_cursor = pattern
                 cpp_type = spelling if spelling.startswith("::") else "::" + spelling
                 inst = self.collect_instantiation(template_cursor, cpp_type)
                 if inst is not None:
+                    # Record the concrete template arguments as references so their
+                    # defining headers get #included (the specialization is only complete
+                    # in the emitted file if every argument type is declared there).
+                    for ai in range(_num_template_args(canon)):
+                        at = canon.get_template_argument_type(ai)
+                        if at is not None:
+                            asp = _strip_prefixes(at.get_canonical().spelling).lstrip(":")
+                            if asp and not asp.startswith("std::"):
+                                inst.setdefault("_refs", set()).add(asp)
                     self._resolve_instantiation_base(inst, template_cursor, canon)
                 break  # only the primary (first) public base is supported
 
@@ -862,6 +917,8 @@ class Extractor:
         if not sub_spelling:
             return
         sub_key = sub_spelling.lstrip(":")
+        if sub_key.startswith("std::"):
+            return  # cannot register against a std base
         inst["_baseCppType"] = "::" + sub_key
         inst.setdefault("_refs", set()).add(sub_key)
         normalized = {k.lstrip(":"): v for k, v in self.classes.items()}
@@ -994,6 +1051,9 @@ class Extractor:
         if cursor.spelling.startswith("operator"):
             self.skipped.append(f"operator function '{full}'")
             return
+        if "consteval" in _tokens_before_body(cursor):
+            self.skipped.append(f"consteval function '{full}' (address cannot be taken)")
+            return
         self.functions.append({"_qname": full, "_cursor": cursor, "_cpp": "&::" + full,
                                "_header": include_relative(
                                    cursor.location.file.name if (cursor.location and cursor.location.file) else None,
@@ -1096,6 +1156,8 @@ def resolve_bases(extractor: Extractor) -> None:
         base_spelling = _strip_prefixes(canon.spelling).lstrip(":")
         if not base_spelling or _is_dependent_spec(canon, base_spelling):
             continue
+        if base_spelling.startswith("std::"):
+            continue  # cannot register against a std base (not a bound native class)
         entry["_baseCppType"] = "::" + base_spelling
         entry.setdefault("_refs", set()).add(base_spelling)
         base_decl = base_child.referenced
@@ -1111,6 +1173,11 @@ def emit_method(extractor, entry, cursor, cpp_type, ctx, method_counts, trust) -
     name = cursor.spelling
     if name.startswith("operator"):
         extractor.skipped.append(f"{cpp_type}::{name}: operator method")
+        return
+    if "consteval" in _tokens_before_body(cursor):
+        # An immediate (consteval) function has no address outside a constant
+        # expression, so `&T::f` is ill-formed and it cannot be bound.
+        extractor.skipped.append(f"{cpp_type}::{name}: consteval (address cannot be taken)")
         return
     overloaded = method_counts.get(name, 0) > 1
     if trust:
@@ -1217,7 +1284,15 @@ def emit_constructor(extractor, entry, cursor, cpp_type, ctx, trust) -> None:
     # Name the lambda parameters (a0, a1, ...) and use canonical spellings so nested /
     # unqualified parameter types resolve at the generated file's scope.
     arg_types = ", ".join(f"{a.type.get_canonical().spelling} a{i}" for i, a in enumerate(args))
-    forwards = ", ".join(f"std::move(a{i})" for i in range(len(args)))
+    # Forward each argument with its exact value category: a non-const lvalue reference
+    # must stay an lvalue (std::move would make it an rvalue that cannot bind to the
+    # constructor's `T&` parameter); everything else is moved.
+    forward_exprs = []
+    for i, a in enumerate(args):
+        t = a.type.get_canonical()
+        non_const_lvalue = (t.kind == TypeKind.LVALUEREFERENCE and not t.get_pointee().is_const_qualified())
+        forward_exprs.append(f"a{i}" if non_const_lvalue else f"std::move(a{i})")
+    forwards = ", ".join(forward_exprs)
     factory = (f"+[]({arg_types}) -> {cpp_type}* {{ return new {cpp_type}({forwards}); }}") \
         if args else f"+[]() -> {cpp_type}* {{ return new {cpp_type}(); }}"
     entry["constructor"] = factory

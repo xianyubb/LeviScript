@@ -14,6 +14,8 @@
 #include "script/Types.h"
 #include "script/bind/TypeConverter.h"
 
+#include "plugin/include_all.h"
+
 // ---------------------------------------------------------------------------
 // The binding framework: automatic function binding + class binding with real
 // C++ inheritance support (the feature ScriptX never provided).

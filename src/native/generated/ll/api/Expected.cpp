@@ -8,12 +8,18 @@
 #include <vector>
 
 #include "ll/api/Expected.h"
+#include "mc/server/commands/CommandOutput.h"
+#include "ll/api/io/Logger.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::ErrorInfoBase)
 LS_NATIVE_CLASS(::ll::Error)
+LS_NATIVE_CLASS(::ll::StringError)
+LS_NATIVE_CLASS(::ll::ErrorCodeError)
+LS_NATIVE_CLASS(::CommandOutput)
+LS_NATIVE_CLASS(::ll::io::Logger)
 
 namespace ls::native::generated {
 
@@ -37,13 +43,31 @@ void bind_ll_api_Expected(ScriptEngine& engine) {
 
     // -- ErrorInfoBase --------------------
     ClassBinder::registerClass<::ll::ErrorInfoBase>(engine, "ErrorInfoBase");
+    ClassBinder::method<::ll::ErrorInfoBase>(engine, "message", static_cast<std::basic_string<char> (::ll::ErrorInfoBase::*)() const noexcept>(&::ll::ErrorInfoBase::message));
+    ClassBinder::method<::ll::ErrorInfoBase>(engine, "message", static_cast<std::basic_string<char> (::ll::ErrorInfoBase::*)(std::basic_string_view<char>) const noexcept>(&::ll::ErrorInfoBase::message));
     ClassBinder::expose<::ll::ErrorInfoBase>(engine, ns.handle(), "ErrorInfoBase");
 
     // -- Error --------------------
     ClassBinder::registerClass<::ll::Error>(engine, "Error");
     ClassBinder::method<::ll::Error>(engine, "message", static_cast<std::basic_string<char> (::ll::Error::*)() const>(&::ll::Error::message));
     ClassBinder::method<::ll::Error>(engine, "message", static_cast<std::basic_string<char> (::ll::Error::*)(std::basic_string_view<char>) const>(&::ll::Error::message));
+    ClassBinder::method<::ll::Error>(engine, "log", static_cast<const ll::Error & (::ll::Error::*)(ll::io::Logger &, ll::io::LogLevel) const>(&::ll::Error::log));
+    ClassBinder::method<::ll::Error>(engine, "log", static_cast<const ll::Error & (::ll::Error::*)(ll::io::Logger &, std::basic_string_view<char>, ll::io::LogLevel) const>(&::ll::Error::log));
+    ClassBinder::method<::ll::Error>(engine, "log", static_cast<const ll::Error & (::ll::Error::*)(CommandOutput &, CommandOutputMessageType) const>(&::ll::Error::log));
+    ClassBinder::method<::ll::Error>(engine, "log", static_cast<const ll::Error & (::ll::Error::*)(CommandOutput &, std::basic_string_view<char>, CommandOutputMessageType) const>(&::ll::Error::log));
+    ClassBinder::constructor<::ll::Error>(engine, +[]() -> ::ll::Error* { return new ::ll::Error(); });
     ClassBinder::expose<::ll::Error>(engine, ns.handle(), "Error");
+
+    // -- StringError : ErrorInfoBase --------------------
+    ClassBinder::registerClass<::ll::StringError, ::ll::ErrorInfoBase>(engine, "StringError");
+    ClassBinder::method<::ll::StringError>(engine, "message", &::ll::StringError::message);
+    ClassBinder::constructor<::ll::StringError>(engine, +[](std::basic_string<char> a0) -> ::ll::StringError* { return new ::ll::StringError(std::move(a0)); });
+    ClassBinder::expose<::ll::StringError>(engine, ns.handle(), "StringError");
+
+    // -- ErrorCodeError : ErrorInfoBase --------------------
+    ClassBinder::registerClass<::ll::ErrorCodeError, ::ll::ErrorInfoBase>(engine, "ErrorCodeError");
+    ClassBinder::method<::ll::ErrorCodeError>(engine, "message", &::ll::ErrorCodeError::message);
+    ClassBinder::expose<::ll::ErrorCodeError>(engine, ns.handle(), "ErrorCodeError");
 
     global.setProperty("ll", ns);
 }

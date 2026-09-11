@@ -8,11 +8,23 @@
 #include <vector>
 
 #include "ll/api/event/command/ExecuteCommandEvent.h"
+#include "ll/api/event/Cancellable.h"
+#include "mc/deps/nbt/CompoundTag.h"
+#include "mc/server/commands/MinecraftCommands.h"
+#include "ll/api/event/Event.h"
+#include "mc/deps/core/utility/MCRESULT.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::event::command::ExecuteCommandEvent)
+LS_NATIVE_CLASS(::ll::event::Cancellable<ll::event::ExecuteCommandEvent>)
+LS_NATIVE_CLASS(::ll::event::command::ExecutingCommandEvent)
+LS_NATIVE_CLASS(::ll::event::command::ExecutedCommandEvent)
+LS_NATIVE_CLASS(::CompoundTag)
+LS_NATIVE_CLASS(::MinecraftCommands)
+LS_NATIVE_CLASS(::ll::event::Event)
+LS_NATIVE_CLASS(::MCRESULT)
 
 namespace ls::native::generated {
 
@@ -38,10 +50,32 @@ void bind_ll_api_event_command_ExecuteCommandEvent(ScriptEngine& engine) {
     Local<Value>  probe2 = ns1.getProperty("command");
     Local<Object> ns = probe2.isObject() ? Local<Object>(probe2) : makeObject(engine);
 
-    // -- ExecuteCommandEvent --------------------
-    ClassBinder::registerClass<::ll::event::command::ExecuteCommandEvent>(engine, "ExecuteCommandEvent");
+    // -- ExecuteCommandEvent : Event --------------------
+    ClassBinder::registerClass<::ll::event::command::ExecuteCommandEvent, ::ll::event::Event>(engine, "ExecuteCommandEvent");
+    ClassBinder::method<::ll::event::command::ExecuteCommandEvent>(engine, "serialize", &::ll::event::command::ExecuteCommandEvent::serialize);
+    ClassBinder::method<::ll::event::command::ExecuteCommandEvent>(engine, "minecraftCommands", &::ll::event::command::ExecuteCommandEvent::minecraftCommands);
     ClassBinder::method<::ll::event::command::ExecuteCommandEvent>(engine, "suppressOutput", &::ll::event::command::ExecuteCommandEvent::suppressOutput);
     ClassBinder::expose<::ll::event::command::ExecuteCommandEvent>(engine, ns.handle(), "ExecuteCommandEvent");
+
+    // -- CancellableExecuteCommandEvent --------------------
+    ClassBinder::registerClass<::ll::event::Cancellable<ll::event::ExecuteCommandEvent>>(engine, "CancellableExecuteCommandEvent");
+    ClassBinder::method<::ll::event::Cancellable<ll::event::ExecuteCommandEvent>>(engine, "serialize", &::ll::event::Cancellable<ll::event::ExecuteCommandEvent>::serialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::ExecuteCommandEvent>>(engine, "deserialize", &::ll::event::Cancellable<ll::event::ExecuteCommandEvent>::deserialize);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::ExecuteCommandEvent>>(engine, "isCancelled", &::ll::event::Cancellable<ll::event::ExecuteCommandEvent>::isCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::ExecuteCommandEvent>>(engine, "setCancelled", &::ll::event::Cancellable<ll::event::ExecuteCommandEvent>::setCancelled);
+    ClassBinder::method<::ll::event::Cancellable<ll::event::ExecuteCommandEvent>>(engine, "cancel", &::ll::event::Cancellable<ll::event::ExecuteCommandEvent>::cancel);
+    ClassBinder::expose<::ll::event::Cancellable<ll::event::ExecuteCommandEvent>>(engine, ns.handle(), "CancellableExecuteCommandEvent");
+
+    // -- ExecutingCommandEvent : CancellableExecuteCommandEvent --------------------
+    ClassBinder::registerClass<::ll::event::command::ExecutingCommandEvent, ::ll::event::Cancellable<ll::event::ExecuteCommandEvent>>(engine, "ExecutingCommandEvent");
+    ClassBinder::method<::ll::event::command::ExecutingCommandEvent>(engine, "deserialize", &::ll::event::command::ExecutingCommandEvent::deserialize);
+    ClassBinder::expose<::ll::event::command::ExecutingCommandEvent>(engine, ns.handle(), "ExecutingCommandEvent");
+
+    // -- ExecutedCommandEvent : ExecuteCommandEvent --------------------
+    ClassBinder::registerClass<::ll::event::command::ExecutedCommandEvent, ::ll::event::command::ExecuteCommandEvent>(engine, "ExecutedCommandEvent");
+    ClassBinder::method<::ll::event::command::ExecutedCommandEvent>(engine, "serialize", &::ll::event::command::ExecutedCommandEvent::serialize);
+    ClassBinder::method<::ll::event::command::ExecutedCommandEvent>(engine, "result", &::ll::event::command::ExecutedCommandEvent::result);
+    ClassBinder::expose<::ll::event::command::ExecutedCommandEvent>(engine, ns.handle(), "ExecutedCommandEvent");
 
     ns1.setProperty("command", ns);
     ns0.setProperty("event", ns1);

@@ -8,11 +8,13 @@
 #include <vector>
 
 #include "ll/api/thread/ThreadPoolExecutor.h"
+#include "ll/api/coro/Executor.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::thread::ThreadPoolExecutor)
+LS_NATIVE_CLASS(::ll::coro::Executor)
 
 namespace ls::native::generated {
 
@@ -36,8 +38,8 @@ void bind_ll_api_thread_ThreadPoolExecutor(ScriptEngine& engine) {
     Local<Value>  probe1 = ns0.getProperty("thread");
     Local<Object> ns = probe1.isObject() ? Local<Object>(probe1) : makeObject(engine);
 
-    // -- ThreadPoolExecutor --------------------
-    ClassBinder::registerClass<::ll::thread::ThreadPoolExecutor>(engine, "ThreadPoolExecutor");
+    // -- ThreadPoolExecutor : Executor --------------------
+    ClassBinder::registerClass<::ll::thread::ThreadPoolExecutor, ::ll::coro::Executor>(engine, "ThreadPoolExecutor");
     ClassBinder::method<::ll::thread::ThreadPoolExecutor>(engine, "resize", &::ll::thread::ThreadPoolExecutor::resize);
     ClassBinder::method<::ll::thread::ThreadPoolExecutor>(engine, "destroy", &::ll::thread::ThreadPoolExecutor::destroy);
     ClassBinder::staticMethod<::ll::thread::ThreadPoolExecutor>(engine, "getDefault", &::ll::thread::ThreadPoolExecutor::getDefault);

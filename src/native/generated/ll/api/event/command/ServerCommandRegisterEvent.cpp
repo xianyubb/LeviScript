@@ -8,11 +8,15 @@
 #include <vector>
 
 #include "ll/api/event/command/ServerCommandRegisterEvent.h"
+#include "mc/deps/nbt/CompoundTag.h"
+#include "ll/api/event/command/CommandRegisterEvent.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::event::command::ServerCommandRegisterEvent)
+LS_NATIVE_CLASS(::CompoundTag)
+LS_NATIVE_CLASS(::ll::event::CommandRegisterEvent)
 
 namespace ls::native::generated {
 
@@ -38,8 +42,9 @@ void bind_ll_api_event_command_ServerCommandRegisterEvent(ScriptEngine& engine) 
     Local<Value>  probe2 = ns1.getProperty("command");
     Local<Object> ns = probe2.isObject() ? Local<Object>(probe2) : makeObject(engine);
 
-    // -- ServerCommandRegisterEvent --------------------
-    ClassBinder::registerClass<::ll::event::command::ServerCommandRegisterEvent>(engine, "ServerCommandRegisterEvent");
+    // -- ServerCommandRegisterEvent : CommandRegisterEvent --------------------
+    ClassBinder::registerClass<::ll::event::command::ServerCommandRegisterEvent, ::ll::event::CommandRegisterEvent>(engine, "ServerCommandRegisterEvent");
+    ClassBinder::method<::ll::event::command::ServerCommandRegisterEvent>(engine, "serialize", &::ll::event::command::ServerCommandRegisterEvent::serialize);
     ClassBinder::method<::ll::event::command::ServerCommandRegisterEvent>(engine, "isClientHostedServer", &::ll::event::command::ServerCommandRegisterEvent::isClientHostedServer);
     ClassBinder::expose<::ll::event::command::ServerCommandRegisterEvent>(engine, ns.handle(), "ServerCommandRegisterEvent");
 

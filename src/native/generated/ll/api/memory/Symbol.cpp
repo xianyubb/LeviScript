@@ -39,12 +39,18 @@ void bind_ll_api_memory_Symbol(ScriptEngine& engine) {
 
     // -- SymbolView --------------------
     ClassBinder::registerClass<::ll::memory::SymbolView>(engine, "SymbolView");
+    ClassBinder::method<::ll::memory::SymbolView>(engine, "size", &::ll::memory::SymbolView::size);
     ClassBinder::method<::ll::memory::SymbolView>(engine, "resolve", &::ll::memory::SymbolView::resolve);
+    ClassBinder::method<::ll::memory::SymbolView>(engine, "raw", &::ll::memory::SymbolView::raw);
     ClassBinder::method<::ll::memory::SymbolView>(engine, "toString", &::ll::memory::SymbolView::toString);
+    ClassBinder::constructor<::ll::memory::SymbolView>(engine, +[]() -> ::ll::memory::SymbolView* { return new ::ll::memory::SymbolView(); });
     ClassBinder::expose<::ll::memory::SymbolView>(engine, ns.handle(), "SymbolView");
 
     // -- Symbol --------------------
     ClassBinder::registerClass<::ll::memory::Symbol>(engine, "Symbol");
+    ClassBinder::method<::ll::memory::Symbol>(engine, "size", &::ll::memory::Symbol::size);
+    ClassBinder::method<::ll::memory::Symbol>(engine, "view", &::ll::memory::Symbol::view);
+    ClassBinder::constructor<::ll::memory::Symbol>(engine, +[](std::basic_string<char> a0) -> ::ll::memory::Symbol* { return new ::ll::memory::Symbol(std::move(a0)); });
     ClassBinder::expose<::ll::memory::Symbol>(engine, ns.handle(), "Symbol");
 
     ns0.setProperty("memory", ns);

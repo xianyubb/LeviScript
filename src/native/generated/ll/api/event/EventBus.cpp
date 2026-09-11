@@ -8,11 +8,17 @@
 #include <vector>
 
 #include "ll/api/event/EventBus.h"
+#include "ll/api/event/Event.h"
+#include "ll/api/event/EventId.h"
+#include "ll/api/event/ListenerBase.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::event::EventBus)
+LS_NATIVE_CLASS(::ll::event::Event)
+LS_NATIVE_CLASS(::ll::event::EventIdView)
+LS_NATIVE_CLASS(::ll::event::ListenerBase)
 
 namespace ls::native::generated {
 
@@ -38,6 +44,14 @@ void bind_ll_api_event_EventBus(ScriptEngine& engine) {
 
     // -- EventBus --------------------
     ClassBinder::registerClass<::ll::event::EventBus>(engine, "EventBus");
+    ClassBinder::method<::ll::event::EventBus>(engine, "publish", static_cast<void (::ll::event::EventBus::*)(ll::event::Event &, const ll::event::EventIdView &)>(&::ll::event::EventBus::publish));
+    ClassBinder::method<::ll::event::EventBus>(engine, "publish", static_cast<void (::ll::event::EventBus::*)(std::basic_string_view<char>, ll::event::Event &, const ll::event::EventIdView &)>(&::ll::event::EventBus::publish));
+    ClassBinder::method<::ll::event::EventBus>(engine, "hasEvent", &::ll::event::EventBus::hasEvent);
+    ClassBinder::method<::ll::event::EventBus>(engine, "getListenerCount", static_cast<unsigned long long (::ll::event::EventBus::*)(const ll::event::EventIdView &)>(&::ll::event::EventBus::getListenerCount));
+    ClassBinder::method<::ll::event::EventBus>(engine, "getListener", &::ll::event::EventBus::getListener);
+    ClassBinder::method<::ll::event::EventBus>(engine, "removeListener", static_cast<bool (::ll::event::EventBus::*)(unsigned long long)>(&::ll::event::EventBus::removeListener));
+    ClassBinder::method<::ll::event::EventBus>(engine, "hasListener", static_cast<bool (::ll::event::EventBus::*)(unsigned long long, const ll::event::EventIdView &) const>(&::ll::event::EventBus::hasListener));
+    ClassBinder::method<::ll::event::EventBus>(engine, "hasListener", static_cast<bool (::ll::event::EventBus::*)(unsigned long long) const>(&::ll::event::EventBus::hasListener));
     ClassBinder::staticMethod<::ll::event::EventBus>(engine, "getInstance", &::ll::event::EventBus::getInstance);
     ClassBinder::expose<::ll::event::EventBus>(engine, ns.handle(), "EventBus");
 

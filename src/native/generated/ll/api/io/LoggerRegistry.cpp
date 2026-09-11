@@ -8,11 +8,13 @@
 #include <vector>
 
 #include "ll/api/io/LoggerRegistry.h"
+#include "ll/api/io/Logger.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::io::LoggerRegistry)
+LS_NATIVE_CLASS(::ll::io::Logger)
 
 namespace ls::native::generated {
 
@@ -38,6 +40,8 @@ void bind_ll_api_io_LoggerRegistry(ScriptEngine& engine) {
 
     // -- LoggerRegistry --------------------
     ClassBinder::registerClass<::ll::io::LoggerRegistry>(engine, "LoggerRegistry");
+    ClassBinder::method<::ll::io::LoggerRegistry>(engine, "getOrCreate", &::ll::io::LoggerRegistry::getOrCreate);
+    ClassBinder::method<::ll::io::LoggerRegistry>(engine, "tryGet", &::ll::io::LoggerRegistry::tryGet);
     ClassBinder::method<::ll::io::LoggerRegistry>(engine, "erase", &::ll::io::LoggerRegistry::erase);
     ClassBinder::staticMethod<::ll::io::LoggerRegistry>(engine, "getInstance", &::ll::io::LoggerRegistry::getInstance);
     ClassBinder::expose<::ll::io::LoggerRegistry>(engine, ns.handle(), "LoggerRegistry");

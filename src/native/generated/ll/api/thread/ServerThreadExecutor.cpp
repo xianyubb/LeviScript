@@ -8,11 +8,13 @@
 #include <vector>
 
 #include "ll/api/thread/ServerThreadExecutor.h"
+#include "ll/api/coro/Executor.h"
 #include "script/Local.h"
 #include "script/ScriptEngine.h"
 #include "script/bind/Bind.h"
 
 LS_NATIVE_CLASS(::ll::thread::ServerThreadExecutor)
+LS_NATIVE_CLASS(::ll::coro::Executor)
 
 namespace ls::native::generated {
 
@@ -36,8 +38,8 @@ void bind_ll_api_thread_ServerThreadExecutor(ScriptEngine& engine) {
     Local<Value>  probe1 = ns0.getProperty("thread");
     Local<Object> ns = probe1.isObject() ? Local<Object>(probe1) : makeObject(engine);
 
-    // -- ServerThreadExecutor --------------------
-    ClassBinder::registerClass<::ll::thread::ServerThreadExecutor>(engine, "ServerThreadExecutor");
+    // -- ServerThreadExecutor : Executor --------------------
+    ClassBinder::registerClass<::ll::thread::ServerThreadExecutor, ::ll::coro::Executor>(engine, "ServerThreadExecutor");
     ClassBinder::staticMethod<::ll::thread::ServerThreadExecutor>(engine, "getDefault", &::ll::thread::ServerThreadExecutor::getDefault);
     ClassBinder::expose<::ll::thread::ServerThreadExecutor>(engine, ns.handle(), "ServerThreadExecutor");
 
